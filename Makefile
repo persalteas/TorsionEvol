@@ -7,12 +7,12 @@ TARGET   = torsionEvol
 
 CC	   = g++
 # compiling flags here
-CFLAGS   = -I. -fno-stack-protector -v
-CXXFLAGS = -std=c++14 -Wall -Wpedantic -Wextra
+CFLAGS   = -I. -static -O3
+CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra
 
-LINKER   = ld
+LINKER   = g++
 # linking flags here
-LDFLAGS   = -I. -lm -ldl
+LDFLAGS   = -I. -lm -ldl -static
 
 # change these to proper directories where each file should be
 SRCDIR   = src
@@ -25,10 +25,12 @@ OBJECTS  := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 rm	   = rm -f
 
 $(BINDIR)/$(TARGET): $(OBJECTS)
+	@mkdir -p $(BINDIR)
 	$(LINKER) $(OBJECTS) $(LDFLAGS) -o $@
 	@echo "\033[00;32mLinking completed.\033[00m"
 
 $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
+	@mkdir -p $(OBJDIR)
 	$(CC) -c $(CFLAGS) $(CXXFLAGS) $< -o $@
 	@echo "\033[00;32mCompiled "$<".\033[00m"
 

@@ -31,4 +31,8 @@
 *.out
 *.app
 
+# Useless folders
 python/
+.vscode/
+bin/
+

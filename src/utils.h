@@ -1,5 +1,5 @@
 #include <iostream>
-#include "INIReader.h"
+#include "IniReader.h"
 using namespace std;
 
 /* A struct to store parameters of the .ini file. These are default values.
