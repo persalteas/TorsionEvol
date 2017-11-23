@@ -7,12 +7,12 @@ TARGET   = torsionEvol
 
 CC	   = g++
 # compiling flags here
-CFLAGS   = -I. -static -O3
+CFLAGS   = -I. -O3
 CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra
 
 LINKER   = g++
 # linking flags here
-LDFLAGS   = -I. -lm -ldl -static
+LDFLAGS   = -I. -lm -ldl -lboost_system -lboost_filesystem 
 
 # change these to proper directories where each file should be
 SRCDIR   = src

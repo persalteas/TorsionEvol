@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vector>
 #include "IniReader.h"
+#include <boost/algorithm/string.hpp>
 using namespace std;
 
 /* A struct to store parameters of the .ini file. These are default values.
@@ -31,4 +33,26 @@ typedef struct {
     double  x0_TOPO = -0.04;
 } Params;
 
+typedef struct {
+    const char*   prot_name;
+    uint    prot_pos;
+} prot_t;
+
+typedef struct {
+    uint    TUindex;
+    char    TUorient;
+    uint    TTS_pos;
+    double  TTS_proba_off;
+} TTS_t;
+
+typedef struct {
+    uint    TUindex;
+    char    TUorient;
+    uint    TSS_pos;
+    double  TSS_strength;
+} TSS_t;
+
 Params *readIni(const char *cfgFile);
+vector<prot_t>* readProt(string protFile);
+vector<TSS_t>* readTSS(string TSSFile);
+vector<TTS_t>* readTTS(string TTSFile);

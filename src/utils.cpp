@@ -32,3 +32,56 @@ Params *readIni(const char *cfgFile){
 
     return conf;
 }
+
+vector<prot_t>* readProt(string protFile){
+	vector<prot_t>* data = new vector<prot_t>; 
+	ifstream file(protFile.c_str());
+	string str; 
+	getline(file, str); // headers
+    while (getline(file, str))
+    {
+        vector<string> v;
+		boost::split(v, str, ::isspace);
+		prot_t line = { v[0].c_str(), static_cast<uint>(atoi(v[1].c_str())) };
+		data->push_back( line );
+    }
+	return data;
+}
+
+vector<TSS_t>* readTSS(string TSSFile){
+	vector<TSS_t>* data = new vector<TSS_t>; 
+	ifstream file(TSSFile.c_str());
+	string str; 
+	getline(file, str); // headers
+    while (getline(file, str))
+    {
+        vector<string> v;
+		boost::split(v, str, ::isspace);
+		TSS_t line = {  static_cast<uint>(atoi(v[0].c_str())), 
+						*(v[1].c_str()), 
+						static_cast<uint>(atoi(v[2].c_str())), 
+						atof(v[3].c_str())
+					 };
+		data->push_back( line );
+    }
+	return data;
+}
+
+vector<TTS_t>* readTTS(string TTSFile){
+	vector<TTS_t>* data = new vector<TTS_t>; 
+	ifstream file(TTSFile.c_str());
+	string str; 
+	getline(file, str); // headers
+    while (getline(file, str))
+    {
+        vector<string> v;
+		boost::split(v, str, ::isspace);
+		TTS_t line = { 	static_cast<uint>(atoi(v[0].c_str())), 
+						*(v[1].c_str()), 
+						static_cast<uint>(atoi(v[2].c_str())), 
+						atof(v[3].c_str())
+					 };
+		data->push_back( line );
+    }
+	return data;
+}
