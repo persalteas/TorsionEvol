@@ -52,7 +52,33 @@ typedef struct {
     double  TSS_strength;
 } TSS_t;
 
-Params *readIni(const char *cfgFile);
-vector<prot_t>* readProt(string protFile);
-vector<TSS_t>* readTSS(string TSSFile);
-vector<TTS_t>* readTTS(string TTSFile);
+typedef struct {
+    string  seqname;    // name of the chromosome or scaffold
+    string  source;     // name of the program that generated this feature, or the data source (database or project name) 
+    string  feature;    // feature type name, e.g. Gene, Variation, Similarity
+    uint    start;      // Start position of the feature, with sequence numbering starting at 1
+    uint    end;        // End position of the feature, with sequence numbering starting at 1
+    double  score;
+    char    strand;     // defined as + (forward) or - (reverse)
+    int     frame;      // One of '0', '1' or '2'. '0' indicates that the first base of the feature is the first base of a codon, '1' that the second base is the first base of a codon, and so on
+    string  attribute;  // A semicolon-separated list of tag-value pairs, providing additional information about each feature
+} GFF_t;                // (Format like GFF file format in "Ensembl" databases)
+
+typedef vector<prot_t> prot_file;
+typedef vector<TSS_t> TSS_file;
+typedef vector<TTS_t> TTS_file;
+typedef vector<GFF_t> GFF_file;
+
+Params*     readIni(const char *cfgFile);
+prot_file*  readProt(string protFile);
+TSS_file*   readTSS(string TSSFile);
+TTS_file*   readTTS(string TTSFile);
+GFF_file*   readGFF(string GFFFile);
+
+ostream &operator<<(ostream &stream, TSS_t const &s);
+ostream &operator<<(ostream &stream, TTS_t const &s);
+ostream &operator<<(ostream &stream, GFF_t const &s);
+ostream &operator<<(ostream &stream, prot_t const &s);
+
+template<typename T>
+void    display_vector_star(T* vector);

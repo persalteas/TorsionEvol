@@ -4,6 +4,16 @@
 
 using namespace std;
 
+template<typename file_type>
+void    display_vector_star(file_type* f){
+    file_type v = *f;
+    for (size_t n = 0; n < v.size(); n++)
+    	cout << v[n] << endl;
+  	cout << endl;
+}
+
+
+
 int main(int argc, char** argv) {
 	if (!argc) cout << "torsionEvol path/to/params.ini";
 	Params* params = readIni(argv[1]);
@@ -24,10 +34,22 @@ int main(int argc, char** argv) {
 	vector<prot_t>* prot = readProt(pth + params->BARR_FIX);
 	vector<TTS_t>* tts = readTTS(pth + params->TTS);
 	vector<TSS_t>* tss = readTSS(pth + params->TSS);
+	vector<GFF_t>* gff_df_raw = readGFF(pth + params->GFF);
 
+	vector<uint> TSS_pos;
+	std::transform(tss->begin(), tss->end(), std::back_inserter(TSS_pos), 
+					[](TSS_t const& x) { return x.TSS_pos; });
+				
+
+
+
+
+
+	// delete loaded params files
 	delete params;
 	delete prot;
 	delete tss;
 	delete tts;
+	delete gff_df_raw;
 	return(EXIT_SUCCESS);
 }
