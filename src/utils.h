@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <map>
 #include "IniReader.h"
 #include <boost/algorithm/string.hpp>
 using namespace std;
@@ -82,3 +83,6 @@ ostream &operator<<(ostream &stream, prot_t const &s);
 
 template<typename T>
 void    display_vector_star(T* vector);
+
+uint	get_genome_size(GFF_file* gff_df);
+map< uint , vector<uint> > get_TU_tts(TSS_file* tss, TTS_file* tts);

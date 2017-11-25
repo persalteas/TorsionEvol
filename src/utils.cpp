@@ -157,3 +157,37 @@ void    display_vector_star(file_type* f){
     	cout << v[n] << endl;
   	cout << endl;
 }
+
+uint		get_genome_size(GFF_file* gff_df) {
+	// This is dirty. Guess genome size from the first annotation in GFF.
+	GFF_t full_genome = (*gff_df)[0];
+	return full_genome.end - full_genome.start + 1;
+}
+
+
+map< uint , vector<uint> > get_TU_tts(TSS_file* tss, TTS_file* tts) {
+	vector<uint> TU_values;
+	std::transform(tss->begin(), tss->end(), std::back_inserter(TU_values), 
+					[](TSS_t const& x) { return x.TUindex; });
+	vector<uint> TTS_pos;
+	std::transform(tts->begin(), tts->end(), std::back_inserter(TTS_pos), 
+					[](TTS_t const& x) { return x.TTS_pos; });
+
+	map< uint , vector<uint> > TU_tts;
+	for ( 	size_t i = 0, TU_index_val = TU_values[0] ; 
+			i < TU_values.size() ;
+			i++, TU_index_val = TU_values[i]
+		) 
+	{
+		TU_tts[TU_index_val].push_back(TTS_pos[i]);
+	}
+
+	// display
+	// for (size_t i = 0; i < TU_values.size(); i++) 
+	// {
+	// 	cout << "TU n°" << TU_values[i] << ", tts at ";
+	// 	display_vector_star(&TU_tts[TU_values[i]]);
+	// }
+
+	return TU_tts;
+}
