@@ -35,7 +35,7 @@ typedef struct {
 } Params;
 
 typedef struct {
-    const char*   prot_name;
+    string  prot_name;
     uint    prot_pos;
 } prot_t;
 
@@ -71,10 +71,10 @@ typedef vector<TTS_t> TTS_file;
 typedef vector<GFF_t> GFF_file;
 
 Params*     readIni(const char *cfgFile);
-prot_file*  readProt(string protFile);
-TSS_file*   readTSS(string TSSFile);
-TTS_file*   readTTS(string TTSFile);
-GFF_file*   readGFF(string GFFFile);
+void        readProt(prot_file& data, string protFile);
+void        readTSS(TSS_file& data, string TSSFile);
+void        readTTS(TTS_file& data, string TTSFile);
+void        readGFF(GFF_file& data, string GFFFile);
 
 ostream &operator<<(ostream &stream, TSS_t const &s);
 ostream &operator<<(ostream &stream, TTS_t const &s);
@@ -82,7 +82,7 @@ ostream &operator<<(ostream &stream, GFF_t const &s);
 ostream &operator<<(ostream &stream, prot_t const &s);
 
 template<typename T>
-void    display_vector_star(T* vector);
+void    display_vector(T& vector);
 
-uint	get_genome_size(GFF_file* gff_df);
-map< uint , vector<uint> > get_TU_tts(TSS_file* tss, TTS_file* tts);
+uint	get_genome_size(GFF_file& gff_df);
+map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts);

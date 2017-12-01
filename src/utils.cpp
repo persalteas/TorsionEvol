@@ -33,8 +33,7 @@ Params *readIni(const char *cfgFile){
     return conf;
 }
 
-prot_file* readProt(string protFile){
-	vector<prot_t>* data = new vector<prot_t>; 
+void readProt(prot_file& data, string protFile){
 	ifstream file(protFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -43,16 +42,15 @@ prot_file* readProt(string protFile){
         vector<string> v;
 		boost::split(v, str, ::isspace);
 		if (v.size() == 2) {
-			prot_t line = { v[0].c_str(), static_cast<uint>(atoi(v[1].c_str())) };
-			data->push_back( line );
+			prot_t line = { v[0], static_cast<uint>(atoi(v[1].c_str())) };
+			data.push_back( line );
 		}
     }
-	cout << protFile << " parsed successfully." << endl;
-	return data;
+	display_vector(data);
+	cout << endl << protFile << " parsed successfully." << endl;
 }
 
-TSS_file* readTSS(string TSSFile){
-	vector<TSS_t>* data = new vector<TSS_t>; 
+void readTSS(TSS_file& data, string TSSFile){
 	ifstream file(TSSFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -66,17 +64,14 @@ TSS_file* readTSS(string TSSFile){
 							static_cast<uint>(atoi(v[2].c_str())), 
 							atof(v[3].c_str())
 						};
-			data->push_back( line );
+			data.push_back( line );
 		}
 	}
-	// cout << "data: " << endl;
     // display_vector_star(data);
 	cout << TSSFile << " parsed successfully." << endl;
-	return data;
 }
 
-TTS_file* readTTS(string TTSFile){
-	vector<TTS_t>* data = new vector<TTS_t>; 
+void readTTS(TTS_file& data, string TTSFile){
 	ifstream file(TTSFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -90,15 +85,13 @@ TTS_file* readTTS(string TTSFile){
 							static_cast<uint>(atoi(v[2].c_str())), 
 							atof(v[3].c_str())
 						};
-			data->push_back( line );
+			data.push_back( line );
 		}
     }
 	cout << TTSFile << " parsed successfully." << endl;
-	return data;
 }
 
-GFF_file* readGFF(string GFFFile){
-	vector<GFF_t>* data = new vector<GFF_t>; 
+void readGFF(GFF_file& data, string GFFFile){
 	ifstream file(GFFFile.c_str());
 	string str; 
 	do { 
@@ -118,11 +111,10 @@ GFF_file* readGFF(string GFFFile){
 							atoi(v[7].c_str()),
 							v[8]
 						};
-			data->push_back( line );
+			data.push_back( line );
 		}
     } while (getline(file, str));
 	cout << GFFFile << " parsed successfully." << endl;
-	return data;
 }
 
 ostream &operator<<(ostream &stream, TSS_t const &s) { 
@@ -151,26 +143,24 @@ ostream &operator<<(ostream &stream, GFF_t const &s) {
 }
 
 template<typename file_type>
-void    display_vector_star(file_type* f){
-    file_type v = *f;
+void    display_vector(file_type& v){
     for (size_t n = 0; n < v.size(); n++)
     	cout << v[n] << endl;
   	cout << endl;
 }
 
-uint		get_genome_size(GFF_file* gff_df) {
+uint	get_genome_size(GFF_file& gff_df) {
 	// This is dirty. Guess genome size from the first annotation in GFF.
-	GFF_t full_genome = (*gff_df)[0];
+	GFF_t full_genome = gff_df[0];
 	return full_genome.end - full_genome.start + 1;
 }
 
-
-map< uint , vector<uint> > get_TU_tts(TSS_file* tss, TTS_file* tts) {
+map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts) {
 	vector<uint> TU_values;
-	std::transform(tss->begin(), tss->end(), std::back_inserter(TU_values), 
+	std::transform(tss.begin(), tss.end(), std::back_inserter(TU_values), 
 					[](TSS_t const& x) { return x.TUindex; });
 	vector<uint> TTS_pos;
-	std::transform(tts->begin(), tts->end(), std::back_inserter(TTS_pos), 
+	std::transform(tts.begin(), tts.end(), std::back_inserter(TTS_pos), 
 					[](TTS_t const& x) { return x.TTS_pos; });
 
 	map< uint , vector<uint> > TU_tts;
@@ -186,7 +176,7 @@ map< uint , vector<uint> > get_TU_tts(TSS_file* tss, TTS_file* tts) {
 	// for (size_t i = 0; i < TU_values.size(); i++) 
 	// {
 	// 	cout << "TU n°" << TU_values[i] << ", tts at ";
-	// 	display_vector_star(&TU_tts[TU_values[i]]);
+	// 	display_vector(TU_tts[TU_values[i]]);
 	// }
 
 	return TU_tts;
