@@ -7,7 +7,7 @@ using namespace std;
 template<typename file_type>
 void    display_vector(file_type& v){
     for (size_t n = 0; n < v.size(); n++)
-    	cout << v[n] << endl;
+    	cout << v[n] << " ";
   	cout << endl;
 }
 
@@ -176,7 +176,58 @@ int main(int argc, char** argv) {
 	Dom_size.erase(Dom_size.begin()); // because unlike np.ediff1d, std::adjacent_diff keeps the first element.
 	Dom_size.push_back(genome-Barr_fix[-1]+Barr_fix[0]); // !! change Barr_fix to Barr_pos case : O | |	
 
-	
+	vector<int> Barr_type (Barr_fix.size(), 0);
+	vector<double> Barr_sigma (Barr_fix.size(), params->SIGMA_0);
+
+	// here we need to make an Barr_ts_remain
+	// to track the position of each RNAPol
+    // each position in Barr_ts_remain is associated with the same position in Barr_pos
+    vector<uint> Barr_ts_remain (Barr_fix.size()); 
+	// The Barr_ts_remain of fixed barr is NaN, but in C++ we did not initialize the values !
+
+	// ######### Variables used to get the coverage ##########
+
+	vector<uint> id_shift_fwd(genome-1);
+	iota(id_shift_fwd.begin(), id_shift_fwd.end(), 1); //range(1,genome)
+    id_shift_fwd.push_back(0);
+
+	vector<uint> id_shift_bwd(genome-1);
+	iota(id_shift_bwd.begin(), id_shift_bwd.end(), 0); //range(1,genome)
+    id_shift_bwd.insert(id_shift_bwd.begin(), genome-1);
+
+	vector<uint> cov_bp(genome);
+	uint val = 0;
+	auto first = cov_bp.begin();
+	while (first != cov_bp.end()) {
+		*first = val;
+		++first;
+		val += params->DELTA_X;
+	}
+
+	// cout << "======== vectors: ==========" << endl;
+	// cout << "Barr_fix: " << endl;
+	// display_vector(Barr_fix);
+	// cout << "Barr_pos: " << endl;
+	// display_vector(Barr_pos);
+	// cout << "Barr_type: " << endl;
+	// display_vector(Barr_type);
+	// cout << "Barr_sigma: " << endl;
+	// display_vector(Barr_sigma);
+	// cout << "Barr_ts_remain: " << endl;
+	// display_vector(Barr_ts_remain);
+	// cout << "Dom_size: " << endl;
+	// display_vector(Dom_size);
+	// cout << "id_shift_fwd: " << endl;
+	// display_vector(id_shift_fwd);
+	// cout << "id_shift_bwd: " << endl;
+	// display_vector(id_shift_bwd);
+	// cout << "genome: " << endl;
+	// cout << genome << ' ' << genome_size << " " << params->DELTA_X << endl;
+
+
+	//###########################################################
+    //#                 initiation of values                    #
+    //###########################################################
 
 
 	// delete loaded param files

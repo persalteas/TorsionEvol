@@ -40,14 +40,13 @@ void readProt(prot_file& data, string protFile){
     while (getline(file, str))
     {
         vector<string> v;
-		boost::split(v, str, ::isspace);
+		boost::split(v, str, boost::is_any_of("\t"));
 		if (v.size() == 2) {
 			prot_t line = { v[0], static_cast<uint>(atoi(v[1].c_str())) };
 			data.push_back( line );
 		}
     }
-	display_vector(data);
-	cout << endl << protFile << " parsed successfully." << endl;
+	cout << protFile << " parsed successfully." << endl;
 }
 
 void readTSS(TSS_file& data, string TSSFile){

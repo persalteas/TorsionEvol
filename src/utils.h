@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cctype>
 #include <map>
 #include "IniReader.h"
 #include <boost/algorithm/string.hpp>
