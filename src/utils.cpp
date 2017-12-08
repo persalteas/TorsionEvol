@@ -180,3 +180,40 @@ map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts) {
 
 	return TU_tts;
 }
+
+void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<uint>&TSS_pos)
+{
+	uint index;
+	for (auto tss : TSS_pos)
+	{
+		index = *find_if(Barr_pos.begin(), Barr_pos.end(), 
+						[tss](uint barr)->bool{ return barr>tss; });
+		result.push_back(index);
+	}
+}
+
+void f_init_rate( 	vector<double>& result,
+					vector<double>& tr_prob, 
+					vector<double>& sig, 
+					double sigma_t, 
+					double epsilon,
+					double m)
+{
+	for(vector<double>::iterator i = tr_prob.begin(), j = sig.begin(); j != sig.end(); ++i,++j)
+		result.push_back(*i * exp((1/(1+exp((*j-sigma_t)/epsilon)))*m));
+}
+
+void f_prob_init_rate( 	vector<double>& result,
+						vector<double>& init_rate, 
+						double sum_init_rate, 
+						int DELTA_T)
+{
+	for(double i : init_rate)
+		result.push_back( 1 - exp(-i*double(DELTA_T))*i/sum_init_rate);
+}
+
+double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr)
+{
+	return(exp(-sum_Kon*double(DELTA_T))/double(RNAPs_unhooked_nbr));
+}
+

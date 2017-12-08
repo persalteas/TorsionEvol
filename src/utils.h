@@ -87,3 +87,9 @@ void    display_vector(T& vector);
 
 uint	get_genome_size(GFF_file& gff_df);
 map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts);
+void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<uint>&TSS_pos);
+void f_init_rate( vector<double>& result, vector<double>& tr_prob, vector<double>& sig, 
+				  double sigma_t, double epsilon, double m);
+void f_prob_init_rate( 	vector<double>& result, vector<double>& init_rate, 
+					double sum_init_rate, int DELTA_T);
+double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
