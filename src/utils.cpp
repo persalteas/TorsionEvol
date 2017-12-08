@@ -13,7 +13,7 @@ Params *readIni(const char *cfgFile){
 	conf->sigma_t = getOptionToDouble("sigma_t");
 	conf->SIGMA_0 = getOptionToDouble("SIGMA_0");
 	conf->DELTA_X = getOptionToInt("DELTA_X");
-	conf->DELTA_T = getOptionToInt("DELTA_Y");
+	conf->DELTA_T = getOptionToInt("DELTA_T");
 	conf->RNAPS_NB = getOptionToInt("RNAPS_NB");
 	conf->ITERATIONS_NB = getOptionToInt("ITERATIONS_NB");
 	conf->OUTPUT_STEP = getOptionToInt("OUTPUT_STEP");

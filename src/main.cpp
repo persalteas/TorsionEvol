@@ -1,8 +1,12 @@
 #include <cstdlib>
 #include "utils.h"
 #include <boost/filesystem.hpp>
+#include <boost/multi_array.hpp>
 
 using namespace std;
+
+typedef boost::multi_array<int, 3> array3;
+typedef array3::index arr_index;
 
 template<typename file_type>
 void    display_vector(file_type& v){
@@ -229,6 +233,35 @@ int main(int argc, char** argv) {
     //#                 initiation of values                    #
     //###########################################################
 
+	// save the time when RNApoly is starting trasncribing a specific transcript
+	map<uint, vector<int> > tr_times;
+
+	// array where will save all RNAPs info (Create a 3D array)
+	int Niter = params->ITERATIONS_NB/params->DELTA_T;
+	array3 save_RNAPs_infos(boost::extents[params->RNAPS_NB][2][Niter]);
+	for(arr_index i = 0; i != params->RNAPS_NB; ++i) 
+		for(arr_index j = 0; j != 2; ++j)
+			for(arr_index k = 0; k != Niter; ++k)
+				save_RNAPs_infos[i][j][k] = -1; 
+
+	// the same for transcript info
+	array3 save_tr_info (boost::extents[tr_id.size()][2][Niter]);
+	for(arr_index i = 0; i != int(tr_id.size()); ++i) 
+		for(arr_index j = 0; j != 2; ++j)
+			for(arr_index k = 0; k != Niter; ++k)
+				save_tr_info[i][j][k] = -1; 
+
+	// in those variables, we will save/append info in each time step to save them as --> all_res ;-)
+    vector<double> save_Barr_sigma;
+    vector<double> save_Dom_size;
+    vector<double> save_mean_sig_wholeGenome;
+
+    // ########### Go !
+
+	vector<uint> RNAPs_unhooked_id (RNAPs_id.size(), 0);
+	std::copy(RNAPs_id.begin(), RNAPs_id.end(), RNAPs_unhooked_id.begin());
+
+	
 
 	// delete loaded param files
 	delete params;
