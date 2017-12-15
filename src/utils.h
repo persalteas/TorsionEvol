@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <cctype>
+#include <ctime>
 #include <map>
+#include <algorithm>
 #include "IniReader.h"
 #include <boost/algorithm/string.hpp>
 using namespace std;
@@ -93,3 +95,4 @@ void f_init_rate( vector<double>& result, vector<double>& tr_prob, vector<double
 void f_prob_init_rate( 	vector<double>& result, vector<double>& init_rate, 
 					double sum_init_rate, int DELTA_T);
 double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
+void random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
