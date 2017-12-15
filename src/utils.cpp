@@ -206,13 +206,27 @@ double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_n
 	return( exp(-sum_Kon*double(DELTA_T))/RNAPs_unhooked_nbr );
 }
 
-void random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs)
+void random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& proba)
 {
+	vector<double> cum_probs;
+	vector<double> probs = proba;
 	vector<int> available = array;
 	for (uint i=0; i<n; ++i) {
-		int RandIndex = rand() % available.size();
-		result.push_back(available[RandIndex]);
-		swap(available[RandIndex], available.back());		// pops available[RandIndex] in
-		available.pop_back();								// complexity O(1)
-	}														// (available.erase(RandIndex) is O(n))
+		// Compute cumulated probs
+		for (auto it = probs.begin(); it!=probs.end(); it++)
+			cum_probs.push_back(std::accumulate(probs.begin(), it, 0.0));
+
+		// Get an available index at random
+		double k = rand()/double(RAND_MAX);
+		int index = find_if(cum_probs.begin(), cum_probs.end(), [k](double p)->bool{ return p>k; }) - cum_probs.begin() - 1;
+		result.push_back(available[index]);
+		double removed_p = probs[index];
+		for ( auto it=probs.begin(); it!=probs.end(); it++)
+			(*it) /= (1.0 - removed_p);
+
+		// Remove the index from availables
+		cum_probs.clear();
+		available.erase(available.begin()+index);
+		probs.erase(probs.begin()+index);
+	}
 }
