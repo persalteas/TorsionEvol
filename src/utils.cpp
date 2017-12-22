@@ -171,13 +171,6 @@ map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts) {
 		TU_tts[TU_index_val].push_back(TTS_pos[i]);
 	}
 
-	// display
-	// for (size_t i = 0; i < TU_values.size(); i++) 
-	// {
-	// 	cout << "TU n°" << TU_values[i] << ", tts at ";
-	// 	display_vector(TU_tts[TU_values[i]]);
-	// }
-
 	return TU_tts;
 }
 
@@ -186,34 +179,54 @@ void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<uint>&TSS
 	uint index;
 	for (auto tss : TSS_pos)
 	{
-		index = *find_if(Barr_pos.begin(), Barr_pos.end(), 
-						[tss](uint barr)->bool{ return barr>tss; });
+		index = find_if(Barr_pos.begin(), Barr_pos.end(), 
+						[tss](uint barr)->bool{ return barr>tss; }) - Barr_pos.begin();
 		result.push_back(index);
 	}
 }
 
-void f_init_rate( 	vector<double>& result,
-					vector<double>& tr_prob, 
-					vector<double>& sig, 
-					double sigma_t, 
-					double epsilon,
-					double m)
+void f_init_rate( 	vector<double>& result, vector<double>& tr_prob, vector<double>& sig, 
+					double sigma_t, double epsilon, double m)
 {
 	for(vector<double>::iterator i = tr_prob.begin(), j = sig.begin(); j != sig.end(); ++i,++j)
 		result.push_back(*i * exp((1/(1+exp((*j-sigma_t)/epsilon)))*m));
 }
 
-void f_prob_init_rate( 	vector<double>& result,
-						vector<double>& init_rate, 
-						double sum_init_rate, 
-						int DELTA_T)
+void f_prob_init_rate( 	vector<double>& result, vector<double>& init_rate, 
+						double sum_init_rate, int DELTA_T)
 {
-	for(double i : init_rate)
-		result.push_back( 1 - exp(-i*double(DELTA_T))*i/sum_init_rate);
+	for(double i : init_rate) 
+		result.push_back( (1.0 - exp(-sum_init_rate*double(DELTA_T)))*i/sum_init_rate);
+	// ( 1 - np.exp(-sum_init_rate*DELTA_T)) * (init_rate/sum_init_rate)
 }
 
 double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr)
 {
-	return(exp(-sum_Kon*double(DELTA_T))/double(RNAPs_unhooked_nbr));
+	// np.exp(-sum_Kon*DELTA_T)/RNAPs_unhooked_nbr
+	return( exp(-sum_Kon*double(DELTA_T))/RNAPs_unhooked_nbr );
 }
 
+void random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& proba)
+{
+	vector<double> cum_probs;
+	vector<double> probs = proba;
+	vector<int> available = array;
+	for (uint i=0; i<n; ++i) {
+		// Compute cumulated probs
+		for (auto it = probs.begin(); it!=probs.end(); it++)
+			cum_probs.push_back(std::accumulate(probs.begin(), it, 0.0));
+
+		// Get an available index at random
+		double k = rand()/double(RAND_MAX);
+		int index = find_if(cum_probs.begin(), cum_probs.end(), [k](double p)->bool{ return p>k; }) - cum_probs.begin() - 1;
+		result.push_back(available[index]);
+		double removed_p = probs[index];
+		for ( auto it=probs.begin(); it!=probs.end(); it++)
+			(*it) /= (1.0 - removed_p);
+
+		// Remove the index from availables
+		cum_probs.clear();
+		available.erase(available.begin()+index);
+		probs.erase(probs.begin()+index);
+	}
+}

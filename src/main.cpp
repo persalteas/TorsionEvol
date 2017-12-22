@@ -278,14 +278,15 @@ int main(int argc, char** argv) {
 	{
 		// we need to know each TSS belong to which Domaine
         vector<uint> TSS_pos_idx;
-        vector<double> init_rate, sigma_tr_start, prob_init_rate; 
+        vector<double> init_rate, sigma_tr_start, prob_init_rate;
 		searchsorted(TSS_pos_idx, Barr_pos, TSS_pos);
         // after knowing the domaine of each TSS we can get sigma
-		transform(TSS_pos_idx.begin(), TSS_pos_idx.end(), std::back_inserter(sigma_tr_start), 
-						[Barr_sigma](uint const& x) { return Barr_sigma[x-1]; });
+		for (auto i : TSS_pos_idx)
+			sigma_tr_start.push_back(Barr_sigma[i-1]);
         // get the initiation rates
 		f_init_rate(init_rate, tr_rate, sigma_tr_start, params->sigma_t, params->epsilon, params->m);
         double sum_init_rate = vector_sum(init_rate);
+
         f_prob_init_rate(prob_init_rate, init_rate, sum_init_rate, params->DELTA_T);
 
 		if (RNAPs_unhooked_id.size())
@@ -293,16 +294,20 @@ int main(int argc, char** argv) {
 			//get the unhooked rates
             double prob_unhooked_rate = f_prob_unhooked_rate(sum_init_rate, params->DELTA_T, RNAPs_unhooked_id.size());
             vector<double> prob_unhooked_rates (RNAPs_unhooked_id.size(), prob_unhooked_rate);
+
 			vector<double> all_prob; // concatenation
 			all_prob.reserve( prob_init_rate.size() + prob_unhooked_rates.size() ); // preallocate memory
 			all_prob.insert( all_prob.end(), prob_init_rate.begin(), prob_init_rate.end() );
 			all_prob.insert( all_prob.end(), prob_unhooked_rates.begin(), prob_unhooked_rates.end() );
-            // create the numpy array that will contains [ nTSS , Unhooked RNAPS ]
-            
-			// tss_and_unhooked_RNAPs = np.concatenate([tss_id, np.full(len(RNAPs_unhooked_id), -1, dtype=int)])
 
-            // # pick up
-            // picked_tr = np.random.choice(tss_and_unhooked_RNAPs, len(RNAPs_unhooked_id), replace=False, p=all_prob) #RNAPs_unhooked_id
+            // create the numpy array that will contains [ nTSS , Unhooked RNAPS ]
+            vector<int> tss_and_unhooked_RNAPs (tss_id.size()+RNAPs_unhooked_id.size(), -1);
+			std::copy(tss_id.begin(), tss_id.end(), tss_and_unhooked_RNAPs.begin());
+
+            // pick up
+			vector<int> picked_tr;
+			random_choice(picked_tr, tss_and_unhooked_RNAPs, RNAPs_unhooked_id.size(), all_prob);
+            //picked_tr = np.random.choice(tss_and_unhooked_RNAPs, len(RNAPs_unhooked_id), replace=False, p=all_prob) // RNAPs_unhooked_id
 
             // # T# get the unhooked rates
             // prob_unhooked_rate = f_prob_unhooked_rate(sum_init_rate, DELTA_T, len(RNAPs_unhooked_id))
