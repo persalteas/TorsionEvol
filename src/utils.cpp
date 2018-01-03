@@ -172,24 +172,6 @@ map< uint , vector<uint> > get_TU_tts(TSS_file& tss)
 	return TU_tts;
 }
 
-/* Get the transciption unit with the list of tts positions belonging to TU. */
-map< uint , vector<uint> > get_TU_tts_pos(TSS_file& tss, TTS_file& tts) 
-{
-	vector<uint> TU_values;
-	std::transform(tss.begin(), tss.end(), std::back_inserter(TU_values), 
-					[](TSS_t const& x) { return x.TUindex; });
-	vector<DNApos> TTS_pos;
-	std::transform(tts.begin(), tts.end(), std::back_inserter(TTS_pos), 
-					[](TTS_t const& x) { return x.TTS_pos; });
-	map< uint , vector<uint> > TU_tts;
-	for ( 	size_t i = 0, TU_index_val = TU_values[0] ; 
-			i < TU_values.size() ;
-			i++, TU_index_val = TU_values[i]
-		) 
-		TU_tts[TU_index_val].push_back(TTS_pos[i]);
-	return TU_tts;
-}
-
 double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr)
 {
 	// np.exp(-sum_Kon*DELTA_T)/RNAPs_unhooked_nbr
@@ -201,6 +183,7 @@ void random_choice(vector<int>& result, const vector<int>& array, uint n, const 
 	vector<double> cum_probs;
 	vector<double> probs = proba;
 	vector<int> available = array;
+	result.clear();
 	for (uint i=0; i<n; ++i) {
 		// Compute cumulated probs
 		for (auto it = probs.begin(); it!=probs.end(); it++)

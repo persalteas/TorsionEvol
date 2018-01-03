@@ -33,6 +33,7 @@ using namespace std;
 /* ===========================================================
                   New types (and file types)
    =========================================================== */
+
 typedef unsigned int DNApos;
 typedef boost::multi_array<int, 3> array3;
 typedef array3::index arr_index;
@@ -120,7 +121,6 @@ ostream &operator<<(ostream &stream, prot_t const &s);
 
 
 uint	get_genome_size(GFF_file& gff_df);
-map< uint , vector<uint> > get_TU_tts_pos(TSS_file& tss, TTS_file& tts);
 map< uint , vector<uint> > get_TU_tts(TSS_file& tss);
 double  f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
 void    random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
@@ -138,7 +138,6 @@ void    display_vector(file_type& v){
   	cout << endl;
 }
 
-
 /* prints a valarray content */
 template<typename T>
 void display_array(T& v)
@@ -149,15 +148,12 @@ void display_array(T& v)
     cout << "}" << endl;
 }
 
-
 /* sums the elements of a vector. */
 template<typename T>
 T	vector_sum(vector<T>& V) {
 	T sum = 0; for (size_t i = 0; i < V.size(); i++) sum += V[i];
 	return sum;
 }
-
-
 
 /* returns the index in Barr_pos where to place a TSS or a new barrier */
 template<typename T>
@@ -171,7 +167,5 @@ void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<T>&TSS_po
 		result.push_back(index);
 	}
 }
-
-
 
 #endif //UTILS_H_
