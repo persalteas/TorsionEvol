@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <valarray>
 #include <cctype>
 #include <cmath>
 #include <map>
@@ -123,6 +124,7 @@ map< uint , vector<uint> > get_TU_tts_pos(TSS_file& tss, TTS_file& tts);
 map< uint , vector<uint> > get_TU_tts(TSS_file& tss);
 double  f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
 void    random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
+void    calc_sigma(vector<double>& Barr_sigma, Params* params);
 
 /* ===========================================================
                      Definition of templates
@@ -136,6 +138,16 @@ void    display_vector(file_type& v){
   	cout << endl;
 }
 
+
+/* prints a valarray content */
+template<typename T>
+void display_array(T& v)
+{
+    cout << "{ ";
+    for (size_t i = 0; i < v.size(); i++)
+        cout << v[i] << " ";
+    cout << "}" << endl;
+}
 
 
 /* sums the elements of a vector. */

@@ -6,14 +6,10 @@
 
 using namespace std;
 
-template<typename T>
-T 	vector_sum(vector<T>& V) {
-	T sum = 0; for (size_t i = 0; i < V.size(); i++) sum += V[i];
-	return sum;
-}
+static float RNAPs_genSC = 0.1;
 
 int main(int argc, char** argv) {
-	if (!argc) cout << "torsionEvol path/to/params.ini";
+	if (!argc) cout << "torsionEvol path/to/params.ini path/to/working/folder";
 	Params* params = readIni(argv[1]);
 	srand(time(NULL));
 
@@ -111,13 +107,9 @@ int main(int argc, char** argv) {
 	Dom_size.push_back(Barr_fix[0]+(genome-Barr_fix.back())); // !! change Barr_fix to Barr_pos case : O | |	
 	vector<int> Barr_type (Barr_fix.size(), 0);
 	vector<double> Barr_sigma (Barr_fix.size(), params->SIGMA_0);
-
-	// here we need to make an Barr_ts_remain
-	// to track the position of each RNAPol
-    // each position in Barr_ts_remain is associated with the same position in Barr_pos
-    vector<uint> Barr_ts_remain (Barr_fix.size()); 
-	// The Barr_ts_remain of fixed barr is NaN, but in C++ we did not initialize the values !
-
+	// here we need to make an Barr_ts_remain to track the position of each RNAPol
+	// each position in Barr_ts_remain is associated with the same position in Barr_pos
+	vector<int> Barr_ts_remain (Barr_fix.size(), -1); 
 	// For later efficiency while inserting RNAPs in the barriers:
 	Barr_pos.reserve(Barr_fix.size()+params->RNAPS_NB);
 	Barr_type.reserve(Barr_fix.size()+params->RNAPS_NB);
@@ -148,43 +140,24 @@ int main(int argc, char** argv) {
     //#                 initiation of values                    #
     //###########################################################
 
-	// save the time when RNApoly is starting trasncribing a specific transcript
-	// map<uint, vector<int> > tr_times;
-
-	// array where will save all RNAPs info (Create a 3D array)
+	// save the time when RNApoly is starting transcribing a specific transcript
+	map<uint, vector<size_t> > tr_times;
 	uint Niter = params->ITERATIONS_NB/params->DELTA_T;
-	// array3 save_RNAPs_infos(boost::extents[params->RNAPS_NB][2][Niter]);
-	// for(arr_index i = 0; i != params->RNAPS_NB; ++i) 
-	// 	for(arr_index j = 0; j != 2; ++j)
-	// 		for(arr_index k = 0; k != Niter; ++k)
-	// 			save_RNAPs_infos[i][j][k] = -1; 
 
-	// // the same for transcript info
-	// array3 save_tr_info (boost::extents[tr_id.size()][2][Niter]);
-	// for(arr_index i = 0; i != int(tr_id.size()); ++i) 
-	// 	for(arr_index j = 0; j != 2; ++j)
-	// 		for(arr_index k = 0; k != Niter; ++k)
-	// 			save_tr_info[i][j][k] = -1; 
-
-	// // in those variables, we will save/append info in each time step to save them as --> all_res ;-)
-    // vector<double> save_Barr_sigma;
-    // vector<double> save_Dom_size;
-    // vector<double> save_mean_sig_wholeGenome;
-
-    // ########### Go !
 	cout << endl;
 	uint N_RNAPs_unhooked = params->RNAPS_NB;
+	vector<uint> RNAPs_unhooked_id(N_RNAPs_unhooked, -1);
 	vector<int> RNAPs_pos (params->RNAPS_NB, -1);
 	vector<int> RNAPs_last_pos (params->RNAPS_NB, -1);
     vector<int> RNAPs_tr (params->RNAPS_NB, -1); // RNAPs_tr will contain the id of the picked transcript
 	vector<int> RNAPs_strand (params->RNAPS_NB, 0);
-	vector<int> ts_beg (params->RNAPS_NB, -1);
-	vector<int> ts_remain (params->RNAPS_NB, -1);
+	valarray<int> ts_beg (-1, params->RNAPS_NB);
+	valarray<int> ts_remain (-1, params->RNAPS_NB);
 
-	Niter = 2; // debug
+	// Niter = 20; // debug
 	for (size_t t=0; t<Niter; ++t)
 	{
-		cout << "-------------------------" << endl;
+		// cout << "------------ t = " << t << " -------------" << endl;
 		vector<uint> TSS_pos_idx;
 		vector<double> init_rates, prob_init_rates;
 		for (auto it = tr.begin(); it!=tr.end(); it++)
@@ -200,7 +173,7 @@ int main(int argc, char** argv) {
 			it->f_prob_init_rate(sum_init_rates, params->DELTA_T);
 			prob_init_rates.push_back(it->prob_init_rate_);
 		}
-		
+		N_RNAPs_unhooked = RNAPs_unhooked_id.size();
 		if (N_RNAPs_unhooked) // There still are some unfixed RNAPs
 		{
 			//get the probability for a RNAP to remain unhooked
@@ -218,23 +191,27 @@ int main(int argc, char** argv) {
 			// pick up
 			vector<int> picked_tr;
 			random_choice(picked_tr, tss_and_unhooked_RNAPs, N_RNAPs_unhooked, all_prob);
-			cout << "picked_tr: ";
-			display_vector(picked_tr);
-			cout << "ts_remain_all: ";
-			display_vector(ts_remain_all);
+			bool contains_minus_one = (std::find(picked_tr.begin(), picked_tr.end(), -1)!=picked_tr.end());
 
-			cout << endl << "placing RNAPs..." << endl << endl;
-			cout << "RNAPs_tr: ";
-			display_vector(RNAPs_tr);
-			cout << "RNAPs_strand: ";
-			display_vector(RNAPs_strand);
-			cout << "RNAPs_pos: ";
-			display_vector(RNAPs_pos);
-			cout << "ts_remain: ";
-			display_vector(ts_remain);
-			cout << endl;
+			{ // displays
+				// cout << "picked_tr: ";
+				// display_vector(picked_tr);
+				// cout << "ts_remain_all: ";
+				// display_vector(ts_remain_all);
+
+				// cout << endl << "placing RNAPs..." << endl << endl;
+				// cout << "RNAPs_tr: ";
+				// display_vector(RNAPs_tr);
+				// cout << "RNAPs_strand: ";
+				// display_vector(RNAPs_strand);
+				// cout << "RNAPs_pos: ";
+				// display_vector(RNAPs_pos);
+				// cout << "ts_remain: ";
+				// display_vector(ts_remain);
+				// cout << endl;
+			}
 			
-			if (std::find(picked_tr.begin(), picked_tr.end(), -1)==picked_tr.end()) // if all RNAPs are hooked
+			if (!contains_minus_one) // if all RNAPs are Barr_sigmahooked
 			{
 				std::copy(picked_tr.begin(), picked_tr.end(), RNAPs_tr.begin());
 				for (size_t i=0; i<picked_tr.size(); i++)
@@ -245,30 +222,30 @@ int main(int argc, char** argv) {
 					ts_beg[i] = 0;
 					ts_remain[i] = ts_remain_all[picked_tr[i]];
 				}
-
 			}
-			cout << "RNAPs_tr: ";
-			display_vector(RNAPs_tr);
-			cout << "RNAPs_strand: ";
-			display_vector(RNAPs_strand);
-			cout << "RNAPs_pos: ";
-			display_vector(RNAPs_pos);
-			cout << "ts_remain: ";
-			display_vector(ts_remain);
+
+			{ // display
+				// cout << "RNAPs_tr: ";
+				// display_vector(RNAPs_tr);
+				// cout << "RNAPs_strand: ";
+				// display_vector(RNAPs_strand);
+				// cout << "RNAPs_pos: ";
+				// display_vector(RNAPs_pos);
+				// cout << "ts_remain: ";
+				// display_vector(ts_remain);
+				// cout << endl << "Adding RNAPs to topological barriers..." << endl << endl;
+				// cout << "Barr_pos: ";
+				// display_vector(Barr_pos);
+				// cout << "Barr_type: ";
+				// display_vector(Barr_type);
+				// cout << "Dom_size: ";
+				// display_vector(Dom_size);
+				// cout << "Barr_sigma: ";
+				// display_vector(Barr_sigma);
+				// cout << endl;
+			}
 
 			// Add the RNAPs in the list of topological barriers:
-			cout << endl << "Adding RNAPs to topological barriers..." << endl << endl;
-			cout << "Barr_pos: ";
-			display_vector(Barr_pos);
-			cout << "Barr_type: ";
-			display_vector(Barr_type);
-			cout << "Dom_size: ";
-			display_vector(Dom_size);
-			cout << "Barr_sigma: ";
-			display_vector(Barr_sigma);
-			cout << endl;
-			vector<uint> Barr_pos_RNAPs_idx;
-			searchsorted<int>(Barr_pos_RNAPs_idx, Barr_pos, RNAPs_pos);
 			size_t index;
 			DNApos pos;
 			for (size_t i=0; i<RNAPs_pos.size(); i++)
@@ -279,29 +256,151 @@ int main(int argc, char** argv) {
 				Barr_pos.insert(Barr_pos.begin()+index, pos);
 				Barr_type.insert(Barr_type.begin()+index, RNAPs_strand[i]);
 				Barr_sigma.insert(Barr_sigma.begin()+index, Barr_sigma[index-1]);
+				if (!contains_minus_one)
+					Barr_ts_remain.insert(Barr_ts_remain.begin()+index, ts_remain[i]);
 			}
+			Dom_size.resize(Barr_pos.size());
 			std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(), Dom_size.begin());
 			Dom_size.erase(Dom_size.begin()); // because unlike np.ediff1d, std::adjacent_diff keeps the first element.
 			Dom_size.push_back(Barr_pos[0]+(genome-Barr_pos.back()));
 
-			cout << "Barr_pos: ";
-			display_vector(Barr_pos);
-			cout << "Barr_type: ";
-			display_vector(Barr_type);
-			cout << "Dom_size: ";
-			display_vector(Dom_size);
-			cout << "Barr_sigma: ";
-			display_vector(Barr_sigma);			
+			{ //displays
+				// cout << "Barr_pos: ";
+				// display_vector(Barr_pos);
+				// cout << "Barr_type: ";
+				// display_vector(Barr_type);
+				// cout << "Dom_size: ";
+				// display_vector(Dom_size);
+				// cout << "Barr_sigma: ";
+				// display_vector(Barr_sigma);
+				// cout << "Barr_ts_remain: ";
+				// display_vector(Barr_ts_remain);
+			}
 		}
 
-		// Only to remove elements while this code is not finished 
-		// and avoid seg faults:
-		Barr_pos.resize(Barr_fix.size());
-		Barr_type.resize(Barr_fix.size());
-		Barr_sigma.resize(Barr_fix.size());
-		Dom_size.resize(Barr_fix.size());
+		// Moving each polymerase on its transcript
+		ts_beg += 1;
+		ts_remain -= 1;
+		for (uint i=0; i<Barr_pos.size(); i++)
+			Barr_pos[i] += Barr_type[i];
+		// cout << "moving RNAPs. remaining: ";
+		// display_array(ts_remain);
+		// cout << "Barr_ts_remain:";
+		// display_vector(Barr_ts_remain);
+
+		// Saving times where RNAPs have finished a transcript
+		valarray<bool> isfinished = (ts_remain == 0);
+		for (size_t i=0; i<isfinished.size(); i++)
+		{
+			if (isfinished[i])
+			{
+				tr_times[RNAPs_tr[i]].push_back(t*params->DELTA_T);
+				// cout << "INFO: transcript " << RNAPs_tr[i] << " finished:";
+				// display_vector(tr_times[RNAPs_tr[i]]);
+				tr_nbr[RNAPs_tr[i]]++;
+				RNAPs_tr[i] = -1;
+			}
+		}
+
+		// Move (or remove) the RNAPs barriers
+		vector<uint> rm_RNAPs_idx;
+		for (uint i=0; i!=Barr_ts_remain.size(); i++)
+		{
+			if (Barr_type[i]) Barr_ts_remain[i]--;
+			if (!Barr_ts_remain[i]) // RNAP has finished, it unhooks
+				rm_RNAPs_idx.push_back(i);
+		}
+
+		// Recover values to remove, and get the old arrays back
+		vector<double> removed_sigma, old_sigma;
+		vector<uint> removed_dom_size, old_dom_size;
+		for (uint i : rm_RNAPs_idx)
+		{
+			removed_sigma.push_back(Barr_sigma[i]);
+			removed_dom_size.push_back(Dom_size[i]);
+			old_dom_size.push_back(Dom_size[i-1]);
+			old_sigma.push_back(Barr_sigma[i-1]);
+			Barr_sigma[i-1] = (Dom_size[i-1]*Barr_sigma[i-1] + Dom_size[i]*Barr_sigma[i])
+							  / (Dom_size[i-1] + Dom_size[i]);
+		}
+		// cout << "remove indexes:";
+		// display_vector(rm_RNAPs_idx);
+
+		// remove barriers, /!\ assuming rm_RNAPs_idx is sorted (it should be)
+		uint j = 0;
+		for (uint i : rm_RNAPs_idx)
+		{
+			Barr_pos.erase(Barr_pos.begin()+i-j);
+			Barr_type.erase(Barr_type.begin()+i-j);
+			Barr_ts_remain.erase(Barr_ts_remain.begin()+i-j);
+			Barr_sigma.erase(Barr_sigma.begin()+i-j);
+			Dom_size.erase(Dom_size.begin()+i-j);
+			j++;
+		}
+		RNAPs_unhooked_id.clear();
+		for (uint i=0; i<RNAPs_tr.size(); i++)
+		{
+			if (RNAPs_tr[i]==-1)
+				RNAPs_unhooked_id.push_back(i);
+		}
+		for (uint i : RNAPs_unhooked_id)
+		{
+			RNAPs_strand[i] = 0;
+			RNAPs_pos[i] = -1;
+			RNAPs_last_pos[i] = -1;
+			ts_beg[i] = -1;
+			ts_remain[i] = -1;
+		}
+
+		// Update RNAPs positions if still transcribing:
+		for (uint i=0; i<RNAPs_pos.size(); i++)
+			RNAPs_pos[i] += RNAPs_strand[i];
+		//Update the Dom_size:
+		std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(), Dom_size.begin());
+		Dom_size.erase(Dom_size.begin()); // because unlike np.ediff1d, std::adjacent_diff keeps the first element.
+		Dom_size.push_back(Barr_pos[0]+(genome-Barr_pos.back()));
+		
+		// Update Sigma:
+		int a,b,d;
+		for (uint i = 0; i<Barr_pos.size(); i++)
+		{
+			a = Barr_type[i];
+			if (i+1==Barr_pos.size()) b = Barr_type[0];
+			else b = Barr_type[i+1];
+			d = Dom_size[i];
+			switch (a)
+			{
+				case 0:
+					switch (b) 
+					{
+						case 1: Barr_sigma[i] = Barr_sigma[i] * (d-1.0)/d - RNAPs_genSC/d; break;
+						case -1: Barr_sigma[i] = Barr_sigma[i] * (d+1.0)/d + RNAPs_genSC/d; 
+					}
+					break;
+				case -1:
+					switch (b) 
+					{
+						case 1: Barr_sigma[i] = Barr_sigma[i] * (d-2.0)/d - 2*RNAPs_genSC/d; break;
+						case 0: Barr_sigma[i] = Barr_sigma[i] * (d-1.0)/d - RNAPs_genSC/d; 
+					}
+					break;
+				case 1:
+					switch (b) 
+					{
+						case -1: Barr_sigma[i] = Barr_sigma[i] * (d+2.0)/d + 2*RNAPs_genSC/d; break;
+						case 0: Barr_sigma[i] = Barr_sigma[i] * (d+1.0)/d + RNAPs_genSC/d; 
+					}
+			}
+		}
+		calc_sigma(Barr_sigma, params);
+
 	}
 
+	cout << "Simulation completed successfully !! \nNumber of transcripts : "<< endl;
+	for (uint i=0; i<tr_nbr.size(); i++)
+	{
+		cout << "Transcript " << i << " : " << tr_nbr[i] << endl; 
+	}
 
 
 

@@ -220,3 +220,10 @@ void random_choice(vector<int>& result, const vector<int>& array, uint n, const 
 		probs.erase(probs.begin()+index);
 	}
 }
+
+void calc_sigma(vector<double>& Barr_sigma, Params* params)
+{
+	for (auto sig = Barr_sigma.begin(); sig!=Barr_sigma.end(); sig++)
+		*sig += params->DELTA_T * (		params->TOPO_CONC * params->TOPO_CTE / (1 + exp(params->k_TOPO*((*sig)-params->x0_TOPO)) )
+				  					  - params->GYRASE_CONC * params->GYRASE_CTE / (1 + exp(params->k_GYRASE*((*sig)-params->x0_GYRASE)) )  );
+}
