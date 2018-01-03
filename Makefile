@@ -5,7 +5,7 @@
 # project name (generate executable with this name)
 TARGET   = torsionEvol
 
-CC	   = g++
+CC	   = clang++
 # compiling flags here
 CFLAGS   = -I. -O3 -g
 CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra

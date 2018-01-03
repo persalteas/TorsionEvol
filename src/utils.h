@@ -1,12 +1,40 @@
+#ifndef UTILS_H_
+#define UTILS_H_
+
 #include <iostream>
 #include <vector>
 #include <cctype>
-#include <ctime>
+#include <cmath>
 #include <map>
 #include <algorithm>
 #include "IniReader.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/multi_array.hpp>
 using namespace std;
+
+/* Vocabulary:
+    TU = Transcription Unit
+    TSS = Transcription Starting Site
+    TTS = Transcription Termination Site
+    RNAP = RNA Polymerase
+
+    prot.dat =  proteins that make topological barriers that prevent supercoiling to spread.
+                Supercoiling is constant between 2 barriers.
+                RNAPs are barriers too.
+    TSS.dat =   transcription starting sites.
+                n° of the TU  |  strand   |   position   |   strength
+    TTS.dat =   transcription termination sites.
+                n° of the TU  |  strand   |   position   |   strength
+    tousgenesidentiques.gff = annotations of TUs
+*/
+
+
+/* ===========================================================
+                  New types (and file types)
+   =========================================================== */
+typedef unsigned int DNApos;
+typedef boost::multi_array<int, 3> array3;
+typedef array3::index arr_index;
 
 /* A struct to store parameters of the .ini file. These are default values.
    We need to get the real values from the params.ini file. */
@@ -73,6 +101,11 @@ typedef vector<TSS_t> TSS_file;
 typedef vector<TTS_t> TTS_file;
 typedef vector<GFF_t> GFF_file;
 
+
+/* ===========================================================
+                    Declarations of functions
+   =========================================================== */
+
 Params*     readIni(const char *cfgFile);
 void        readProt(prot_file& data, string protFile);
 void        readTSS(TSS_file& data, string TSSFile);
@@ -84,15 +117,49 @@ ostream &operator<<(ostream &stream, TTS_t const &s);
 ostream &operator<<(ostream &stream, GFF_t const &s);
 ostream &operator<<(ostream &stream, prot_t const &s);
 
-template<typename T>
-void    display_vector(T& vector);
 
 uint	get_genome_size(GFF_file& gff_df);
-map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts);
-void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<uint>&TSS_pos);
-void f_init_rate( vector<double>& result, vector<double>& tr_prob, vector<double>& sig, 
-				  double sigma_t, double epsilon, double m);
-void f_prob_init_rate( 	vector<double>& result, vector<double>& init_rate, 
-					double sum_init_rate, int DELTA_T);
-double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
-void random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
+map< uint , vector<uint> > get_TU_tts_pos(TSS_file& tss, TTS_file& tts);
+map< uint , vector<uint> > get_TU_tts(TSS_file& tss);
+double  f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
+void    random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
+
+/* ===========================================================
+                     Definition of templates
+   =========================================================== */
+
+/* Prints a vector's content, elements separated by spaces */
+template<typename file_type>
+void    display_vector(file_type& v){
+    for (size_t n = 0; n < v.size(); n++)
+    	cout << v[n] << " ";
+  	cout << endl;
+}
+
+
+
+/* sums the elements of a vector. */
+template<typename T>
+T	vector_sum(vector<T>& V) {
+	T sum = 0; for (size_t i = 0; i < V.size(); i++) sum += V[i];
+	return sum;
+}
+
+
+
+/* returns the index in Barr_pos where to place a TSS or a new barrier */
+template<typename T>
+void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<T>&TSS_pos)
+{
+	uint index;
+	for (auto tss : TSS_pos)
+	{
+		index = find_if(Barr_pos.begin(), Barr_pos.end(), 
+						[tss](T barr)->bool{ return barr>tss; }) - Barr_pos.begin();
+		result.push_back(index);
+	}
+}
+
+
+
+#endif //UTILS_H_

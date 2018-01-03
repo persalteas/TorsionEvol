@@ -1,6 +1,7 @@
 #include "utils.h"
 
-Params *readIni(const char *cfgFile){
+Params *readIni(const char *cfgFile)
+{
     Params* conf = new Params;
     parseIniFile(cfgFile);
 	conf->GFF = getOptionToString("GFF");
@@ -33,7 +34,8 @@ Params *readIni(const char *cfgFile){
     return conf;
 }
 
-void readProt(prot_file& data, string protFile){
+void readProt(prot_file& data, string protFile)
+{
 	ifstream file(protFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -49,7 +51,8 @@ void readProt(prot_file& data, string protFile){
 	cout << protFile << " parsed successfully." << endl;
 }
 
-void readTSS(TSS_file& data, string TSSFile){
+void readTSS(TSS_file& data, string TSSFile)
+{
 	ifstream file(TSSFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -70,7 +73,8 @@ void readTSS(TSS_file& data, string TSSFile){
 	cout << TSSFile << " parsed successfully." << endl;
 }
 
-void readTTS(TTS_file& data, string TTSFile){
+void readTTS(TTS_file& data, string TTSFile)
+{
 	ifstream file(TTSFile.c_str());
 	string str; 
 	getline(file, str); // headers
@@ -90,7 +94,8 @@ void readTTS(TTS_file& data, string TTSFile){
 	cout << TTSFile << " parsed successfully." << endl;
 }
 
-void readGFF(GFF_file& data, string GFFFile){
+void readGFF(GFF_file& data, string GFFFile)
+{
 	ifstream file(GFFFile.c_str());
 	string str; 
 	do { 
@@ -116,19 +121,23 @@ void readGFF(GFF_file& data, string GFFFile){
 	cout << GFFFile << " parsed successfully." << endl;
 }
 
-ostream &operator<<(ostream &stream, TSS_t const &s) { 
+ostream &operator<<(ostream &stream, TSS_t const &s) 
+{ 
     return stream << "{ " << s.TUindex << " " << s.TUorient << " " << s.TSS_pos << " " << s.TSS_strength << " }";
 }
 
-ostream &operator<<(ostream &stream, prot_t const &s) { 
+ostream &operator<<(ostream &stream, prot_t const &s) 
+{ 
     return stream << "{ " << s.prot_name << " " << s.prot_pos << " }";
 }
 
-ostream &operator<<(ostream &stream, TTS_t const &s) { 
+ostream &operator<<(ostream &stream, TTS_t const &s) 
+{ 
     return stream << "{ " << s.TUindex << " " << s.TUorient << " " << s.TTS_pos << " " << s.TTS_proba_off << " }";
 }
 
-ostream &operator<<(ostream &stream, GFF_t const &s) { 
+ostream &operator<<(ostream &stream, GFF_t const &s) 
+{ 
     return stream 	<< "{ " 
 					<< s.seqname << " " 
 					<< s.source << " " 
@@ -141,63 +150,44 @@ ostream &operator<<(ostream &stream, GFF_t const &s) {
 					<< s.attribute << " }";
 }
 
-template<typename file_type>
-void    display_vector(file_type& v){
-    for (size_t n = 0; n < v.size(); n++)
-    	cout << v[n] << endl;
-  	cout << endl;
-}
-
-uint	get_genome_size(GFF_file& gff_df) {
-	// This is dirty. Guess genome size from the first annotation in GFF.
+/* Guess genome size from the first annotation in GFF. This is dirty. */
+uint	get_genome_size(GFF_file& gff_df) 
+{
 	GFF_t full_genome = gff_df[0];
 	return full_genome.end - full_genome.start + 1;
 }
 
-map< uint , vector<uint> > get_TU_tts(TSS_file& tss, TTS_file& tts) {
+/* Get the transciption unit with the list of tts indexes belonging to TU. */
+map< uint , vector<uint> > get_TU_tts(TSS_file& tss) 
+{
 	vector<uint> TU_values;
 	std::transform(tss.begin(), tss.end(), std::back_inserter(TU_values), 
 					[](TSS_t const& x) { return x.TUindex; });
-	vector<uint> TTS_pos;
+	map< uint , vector<uint> > TU_tts;
+	for (	size_t i = 0, TU_index_val = TU_values[0] ; 
+			i < TU_values.size() ;
+			i++, TU_index_val = TU_values[i]
+		) 
+		TU_tts[TU_index_val].push_back(i);
+	return TU_tts;
+}
+
+/* Get the transciption unit with the list of tts positions belonging to TU. */
+map< uint , vector<uint> > get_TU_tts_pos(TSS_file& tss, TTS_file& tts) 
+{
+	vector<uint> TU_values;
+	std::transform(tss.begin(), tss.end(), std::back_inserter(TU_values), 
+					[](TSS_t const& x) { return x.TUindex; });
+	vector<DNApos> TTS_pos;
 	std::transform(tts.begin(), tts.end(), std::back_inserter(TTS_pos), 
 					[](TTS_t const& x) { return x.TTS_pos; });
-
 	map< uint , vector<uint> > TU_tts;
 	for ( 	size_t i = 0, TU_index_val = TU_values[0] ; 
 			i < TU_values.size() ;
 			i++, TU_index_val = TU_values[i]
 		) 
-	{
 		TU_tts[TU_index_val].push_back(TTS_pos[i]);
-	}
-
 	return TU_tts;
-}
-
-void searchsorted(vector<uint>& result, vector<uint>& Barr_pos, vector<uint>&TSS_pos)
-{
-	uint index;
-	for (auto tss : TSS_pos)
-	{
-		index = find_if(Barr_pos.begin(), Barr_pos.end(), 
-						[tss](uint barr)->bool{ return barr>tss; }) - Barr_pos.begin();
-		result.push_back(index);
-	}
-}
-
-void f_init_rate( 	vector<double>& result, vector<double>& tr_prob, vector<double>& sig, 
-					double sigma_t, double epsilon, double m)
-{
-	for(vector<double>::iterator i = tr_prob.begin(), j = sig.begin(); j != sig.end(); ++i,++j)
-		result.push_back(*i * exp((1/(1+exp((*j-sigma_t)/epsilon)))*m));
-}
-
-void f_prob_init_rate( 	vector<double>& result, vector<double>& init_rate, 
-						double sum_init_rate, int DELTA_T)
-{
-	for(double i : init_rate) 
-		result.push_back( (1.0 - exp(-sum_init_rate*double(DELTA_T)))*i/sum_init_rate);
-	// ( 1 - np.exp(-sum_init_rate*DELTA_T)) * (init_rate/sum_init_rate)
 }
 
 double f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr)
