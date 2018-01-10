@@ -5,7 +5,7 @@
 #include "Transcript.h"
 #include "Individual.h"
 
-static uint POP_SIZE = 1;
+static uint POP_SIZE = 10;
 
 int main(int argc, char** argv) {
     if (argc==1) std::cout << "torsionEvol path/to/params.ini path/to/working/folder path/to/environment.dat[ IndelPoissonMean InvP ]" << std::endl;
@@ -84,8 +84,14 @@ int main(int argc, char** argv) {
     for (uint i=0; i<POP_SIZE; ++i)
         population.push_back(new Individual(genome_size, tr, Barr_fix));
 
+    std::cout << "actual costs of individuals: ";
     for (Individual* indiv : population)
-        indiv->estimate_exression();
+    {
+        indiv->update_fitness();
+        std::cout << indiv->get_fitness() << " ";
+    }
+        
+    std::cout << std::endl;
 
     // Cleaning
     std::cout << std::endl <<  "Simulation completed. Deleting individuals..." << std::endl;

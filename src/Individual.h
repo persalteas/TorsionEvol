@@ -16,6 +16,7 @@ class Individual
     vector<DNApos>* _barr_fix;
     unsigned _genome_size{};
     float _fitness{};
+    void estimate_exression(void);
   public:
     Individual(void); // default constructor
     Individual(const Individual& indiv); // copy constructor
@@ -30,10 +31,10 @@ class Individual
     static void set_mutation(double mean, double p);
     static void set_simulation_params(Params* params);
     static void set_target_envir(vector<double>& env);
-    void estimate_exression(void);
     unsigned get_size(void) const {return _genome_size;}
     unsigned get_n_genes(void) const {return _genes->size();}
     vector<Transcript>& get_genes(void) const {return *_genes;}
+    void update_fitness(void);
     // unsigned gene_start(unsigned index) const {return _genes[2*index];}
     // unsigned gene_end(unsigned index) const {return _genes[2*index+1];}
     unsigned get_n_barriers(void) const {return _barr_fix->size();}

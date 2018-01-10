@@ -23,9 +23,7 @@ Individual::Individual(Individual&& indiv)
   _fitness = indiv._fitness;
 }
 
-Individual::Individual(unsigned genome_size,
-                       vector<Transcript>& tr,
-                       vector<DNApos>& Barr_fix)
+Individual::Individual(unsigned genome_size, vector<Transcript>& tr, vector<DNApos>& Barr_fix)
                       : _genome_size(genome_size)
 { 
   _genes = new std::vector<Transcript> (tr);
@@ -80,6 +78,22 @@ void Individual::set_target_envir(vector<double>& env)
 void Individual::mutate(void)
 {
   
+}
+
+void Individual::update_fitness(void)
+{
+    // Simulate the expression process. Update the expr_count_ attribute of transcripts in _genes.
+    estimate_exression(); 
+
+    // Sum the number of transcripts of each gene to compute a frequency
+    double total_transcripts = 0;
+    for (auto tr=(*_genes).begin(); tr!=(*_genes).end(); tr++)
+        total_transcripts += tr->expr_count_;
+    
+    // _fitness = SUM[ | x[i] - e[i] | ] with x[i] the proportion of gene i, e[i] the target proportion
+    _fitness = 0.0;
+    for (size_t i=0; i<_target_envir.size(); i++)
+        _fitness += abs( ((*_genes)[i].expr_count_ / total_transcripts ) - _target_envir[i] );
 }
 
 Individual::~Individual(void)
@@ -269,8 +283,7 @@ void Individual::estimate_exression()
         // cout << "torsion: ";
         // display_vector(Barr_sigma);
     }
-
-    std::cout << "Simulation completed successfully !! \nNumber of transcripts : "<< endl;
-    for (uint i=0; i<_genes->size(); i++)
-        std::cout << "Transcript " << i << " : " << (*_genes)[i].expr_count_ << endl; 
+    // std::cout << "Simulation completed successfully !! \nNumber of transcripts : "<< endl;
+    // for (uint i=0; i<_genes->size(); i++)
+    //     std::cout << "Transcript " << i << " : " << (*_genes)[i].expr_count_ << endl; 
 }
