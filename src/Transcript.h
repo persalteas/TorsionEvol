@@ -3,12 +3,11 @@
 
 #include "utils.h"
 
-typedef unsigned int DNApos_n;  // DNA positions, divided by DELTA_X.
-
 class Transcript 
 {
     public:
         Transcript(uint TUindex, DNApos TSS, DNApos TTS, int strand, double rate, int dx);
+        Transcript(const Transcript& tr); // customized copy constructor
         uint        TUindex_;
         DNApos      TSS_;
         DNApos      TTS_;

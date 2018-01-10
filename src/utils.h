@@ -4,11 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <valarray>
-#include <cctype>
-#include <cmath>
 #include <map>
-#include <algorithm>
-#include "IniReader.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/multi_array.hpp>
 using namespace std;
@@ -35,6 +31,7 @@ using namespace std;
    =========================================================== */
 
 typedef unsigned int DNApos;
+typedef unsigned int DNApos_n;  // DNA positions, divided by DELTA_X.
 typedef boost::multi_array<int, 3> array3;
 typedef array3::index arr_index;
 
@@ -98,10 +95,10 @@ typedef struct {
     string  attribute;  // A semicolon-separated list of tag-value pairs, providing additional information about each feature
 } GFF_t;                // (Format like GFF file format in "Ensembl" databases)
 
-typedef vector<prot_t> prot_file;
-typedef vector<TSS_t> TSS_file;
-typedef vector<TTS_t> TTS_file;
-typedef vector<GFF_t> GFF_file;
+typedef std::vector<prot_t> prot_file;
+typedef std::vector<TSS_t> TSS_file;
+typedef std::vector<TTS_t> TTS_file;
+typedef std::vector<GFF_t> GFF_file;
 
 
 /* ===========================================================
@@ -113,6 +110,7 @@ void        readProt(prot_file& data, string protFile);
 void        readTSS(TSS_file& data, string TSSFile);
 void        readTTS(TTS_file& data, string TTSFile);
 void        readGFF(GFF_file& data, string GFFFile);
+void        readEnv(vector<double>& env, const char* Envfile);
 
 ostream &operator<<(ostream &stream, TSS_t const &s);
 ostream &operator<<(ostream &stream, TTS_t const &s);
@@ -121,7 +119,7 @@ ostream &operator<<(ostream &stream, prot_t const &s);
 
 
 uint	get_genome_size(GFF_file& gff_df);
-map< uint , vector<uint> > get_TU_tts(TSS_file& tss);
+std::map< uint , vector<uint> > get_TU_tts(TSS_file& tss);
 double  f_prob_unhooked_rate(double sum_Kon, int DELTA_T, size_t RNAPs_unhooked_nbr);
 void    random_choice(vector<int>& result, const vector<int>& array, uint n, const vector<double>& probs);
 void    calc_sigma(vector<double>& Barr_sigma, Params* params);

@@ -1,9 +1,12 @@
 #include "utils.h"
+#include "IniReader.h"
+#include <cmath>
+#include <algorithm>
 
 Params *readIni(const char *cfgFile)
 {
     Params* conf = new Params;
-    parseIniFile(cfgFile);
+    parseIniFile(cfgFile); // from IniReader.h
 	conf->GFF = getOptionToString("GFF");
 	conf->TSS = getOptionToString("TSS");
 	conf->TTS = getOptionToString("TTS");
@@ -119,6 +122,20 @@ void readGFF(GFF_file& data, string GFFFile)
 		}
     } while (getline(file, str));
 	cout << GFFFile << " parsed successfully." << endl;
+}
+
+void readEnv(vector<double>& env, const char* Envfile)
+{
+	ifstream file(Envfile);
+	string str; 
+	env.clear();
+    do {
+        vector<string> v;
+		boost::split(v, str, ::isspace);
+		if (v.size() == 2) 
+			env.push_back( atof(v[1].c_str()) );
+    } while (getline(file, str));
+	cout << Envfile << " parsed successfully." << endl;
 }
 
 ostream &operator<<(ostream &stream, TSS_t const &s) 

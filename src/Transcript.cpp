@@ -10,6 +10,21 @@ Transcript::Transcript(uint TUindex, DNApos TSS, DNApos TTS, int strand, double 
     expr_count_ = 0;
 }
 
+Transcript::Transcript(const Transcript& tr)
+                      : TUindex_(tr.TUindex_), 
+                        TSS_(tr.TSS_), 
+                        TTS_(tr.TTS_),
+                        size_(tr.size_),
+                        start_(tr.start_),
+                        end_(tr.end_),
+                        size_n_(tr.size_n_), 
+                        s_(tr.s_), 
+                        r_(tr.r_)
+{
+    // This copy constructor preserves the position end rate but resets the expression count:
+    expr_count_ = 0;
+}
+
 /* calculate the initiation rate (math formula) */
 double Transcript::f_init_rate( double sigma_t, double epsilon, double m, 
                                 vector<DNApos>& Barr_pos, vector<double>& Barr_sigma)
