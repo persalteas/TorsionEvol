@@ -2,9 +2,10 @@
 #include "Transcript.h"
 #include "utils.h"
 #include <boost/filesystem.hpp>
-#include <cassert>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
+#include <functional>
 
 static uint POP_SIZE = 10;
 static uint GEN_MAX = 2;
@@ -19,7 +20,6 @@ vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // we keep the begining of the vector
   population.erase(population.begin() + population.size() / 2,
                    population.end());
-  assert(population.size() == POP_SIZE);
 
   return population;
 }
@@ -38,9 +38,11 @@ int main(int argc, char **argv) {
 
   // define the input/output directories
   Params *params = readIni(argv[1]);
-  boost::filesystem::create_directories(argv[2]); // output
+  boost::filesystem::create_directories(argv[2]); // output folder
+  ofstream fitnesses;
+  fitnesses.open(std::string(argv[2]) + "/fitnesses.txt");
   argv[1][strlen(argv[1]) - 10] =
-      0; // removes "params.ini" in string "path/to/params.ini"
+      0;                     // removes "params.ini" in "path/to/params.ini"
   const char *pth = argv[1]; // by setting "p" to 0 (end of string)
 
   // read files. The "file" types are vectors of structs
@@ -112,23 +114,32 @@ int main(int argc, char **argv) {
   // =================== Here starts the genetic algorithm =====================
   uint generation_counter = 0;
   while (generation_counter < GEN_MAX) {
-    std::cout << "generation " << generation_counter << "... ";
+    printf("generation %d:", 1 + generation_counter);
+
     // mutate individuals
+    printf(" m");
     for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
          indiv++) {
-      Individual &guy = (**indiv);
-      population.push_back(new Individual(guy));
+      population.push_back(new Individual(**indiv));
       population.back()->mutate();
     }
+
     // Attribute a fitness to individuals (a cost, not really a fitness)
-    for (auto indiv = population.begin(); indiv < population.end(); indiv++)
-      (*indiv)->update_fitness();
-    // Select the most adapted ones (fixed-size poopulation)
+    printf(" f");
+    std::for_each(population.begin(), population.end(),
+                  std::mem_fun(&Individual::update_fitness));
+
+    // Select the most adapted ones (fixed-size population)
+    printf(" s");
     population = natural_selection(population);
+
     // Display the costs
+    printf(" p");
     for (auto indiv = population.begin(); indiv < population.end(); indiv++)
-      std::cout << " " << (*indiv)->get_fitness();
-    std::cout << std::endl;
+      fitnesses << " " << (*indiv)->get_fitness();
+    fitnesses << std::endl;
+
+    printf("\n");
     generation_counter++;
   }
 
@@ -138,6 +149,7 @@ int main(int argc, char **argv) {
   for (Individual *indiv : population)
     delete indiv;
   delete params;
+  fitnesses.close();
 
   // Exiting
   return (EXIT_SUCCESS);
