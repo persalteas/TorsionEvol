@@ -7,7 +7,7 @@ TARGET   = torsionEvol
 
 CC	   = clang++
 # compiling flags here
-CFLAGS   = -I. -O3 -g
+CFLAGS   = -I. -g
 CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra
 
 LINKER   = g++
@@ -43,3 +43,8 @@ clean:
 remove: clean
 	@$(rm) $(BINDIR)/$(TARGET)
 	@echo "\033[00;32mExecutable removed!\033[00m"
+
+
+.PHONY: re
+re: clean $(BINDIR)/$(TARGET)
+	
