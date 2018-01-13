@@ -1,6 +1,7 @@
 #ifndef INDIVIDUAL_H
 #define INDIVIDUAL_H
 
+#include "Random.h"
 #include "Transcript.h"
 #include "utils.h"
 
@@ -11,11 +12,17 @@ private:
   static float _RNAPs_genSC;           // from Meyer simulation
   static Params *_params;              // params from Meyer simulation
   static vector<double> _target_envir; // optimal genes proportions to reach
+  static Random _rand_generator;
   vector<Transcript> *_genes;
   vector<DNApos> *_barr_fix;
   unsigned _genome_size{};
   float _fitness{};
   void estimate_exression(void);
+  DNApos get_rnd_pos_btwn_genes(vector<DNApos> &gene_pos,
+                                vector<size_t> &Dom_size);
+  DNApos get_rnd_pos_in_domain(uint dom, vector<DNApos> &gene_pos,
+                               vector<size_t> &Dom_size);
+  uint get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size);
 
 public:
   Individual(void);                    // default constructor
@@ -34,11 +41,8 @@ public:
   unsigned get_n_genes(void) const { return _genes->size(); }
   vector<Transcript> &get_genes(void) const { return *_genes; }
   void update_fitness(void);
-  // unsigned gene_start(unsigned index) const {return _genes[2*index];}
-  // unsigned gene_end(unsigned index) const {return _genes[2*index+1];}
   unsigned get_n_barriers(void) const { return _barr_fix->size(); }
   vector<DNApos> &get_barriers(void) const { return *_barr_fix; }
-  // unsigned barrier(unsigned index) const {return _barriers[index];}
   float get_fitness(void) const { return _fitness; }
   void mutate(void);
   ~Individual(void); // destructor

@@ -7,8 +7,8 @@
 #include <fstream>
 #include <functional>
 
-static uint POP_SIZE = 10;
-static uint GEN_MAX = 2;
+static uint POP_SIZE = 1;
+static uint GEN_MAX = 5;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
   Individual::set_target_envir(env);
 
   // ================= Transcripts definition ================================
+
   // Map of transciption units with the list of tts belonging to TU. [ TU ]  =
   // (tts1, tts2, ... )
   map<uint, vector<uint>> TU_tts = get_TU_tts(tss);
@@ -85,6 +86,7 @@ int main(int argc, char **argv) {
   }
 
   // ====================== Topological barriers ============================
+
   std::vector<DNApos> Barr_fix; // Get the fixed topo barriers in a vector
   std::transform(
       prot.begin(), prot.end(), back_inserter(Barr_fix),
@@ -114,27 +116,29 @@ int main(int argc, char **argv) {
   // =================== Here starts the genetic algorithm =====================
   uint generation_counter = 0;
   while (generation_counter < GEN_MAX) {
-    printf("generation %d:", 1 + generation_counter);
+    printf("=========== GENERATION %d: =============", 1 + generation_counter);
 
     // mutate individuals
-    printf(" m");
+    printf("\n mutation:\n");
     for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
          indiv++) {
-      population.push_back(new Individual(**indiv));
-      population.back()->mutate();
+      Individual *new_guy = new Individual(**indiv);
+      new_guy->mutate();
+      population.push_back(new_guy);
     }
 
     // Attribute a fitness to individuals (a cost, not really a fitness)
-    printf(" f");
+    printf("\n fitness:\n");
     std::for_each(population.begin(), population.end(),
                   std::mem_fun(&Individual::update_fitness));
 
     // Select the most adapted ones (fixed-size population)
-    printf(" s");
+    printf("\n selection\n");
     population = natural_selection(population);
+    printf("\n");
 
     // Display the costs
-    printf(" p");
+    printf("\n printing\n");
     for (auto indiv = population.begin(); indiv < population.end(); indiv++)
       fitnesses << " " << (*indiv)->get_fitness();
     fitnesses << std::endl;
