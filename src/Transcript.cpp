@@ -3,10 +3,9 @@
 Transcript::Transcript(uint TUindex, DNApos TSS, DNApos TTS, int strand,
                        double rate, int dx)
     : TUindex_(TUindex), TSS_(TSS), TTS_(TTS), s_(strand), r_(rate) {
-  size_ =
-      1 + ::abs(int(TTS_) - int(TSS_)); // need to allow negative diffference
+  size_ = 1 + ::abs(int(TTS_) - int(TSS_));
   size_n_ = size_ / dx;
-  start_ = TSS_ / dx;
+  start_ = 1 + TSS_ / dx;
   end_ = TTS_ / dx;
   expr_count_ = 0;
 }
@@ -31,7 +30,7 @@ double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
               [start](DNApos_n barr) -> bool { return barr > start; }) -
       Barr_pos.begin();
   // The torsion at this TU
-  double sigma_ = Barr_sigma[domain_index - 1];
+  double sigma_ = Barr_sigma[domain_index];
   // The init rate, function of the torsion
   init_rate_ = r_ * exp(m / (1 + exp((sigma_ - sigma_t) / epsilon)));
   return init_rate_;

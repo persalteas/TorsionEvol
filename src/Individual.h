@@ -13,17 +13,16 @@ private:
   static Params *_params;              // params from Meyer simulation
   static vector<double> _target_envir; // optimal genes proportions to reach
   static Random _rand_generator;
-  vector<Transcript> *_genes;
-  vector<DNApos> *_barr_fix;
+  vector<Transcript> _genes;
+  vector<DNApos> _barr_fix;
   unsigned _genome_size{};
   float _fitness{};
   void estimate_exression(void);
   DNApos get_rnd_pos_btwn_genes(vector<DNApos> &gene_pos,
                                 vector<size_t> &Dom_size);
-  DNApos get_rnd_pos_in_domain(uint dom, vector<DNApos> &gene_pos,
+  DNApos get_rnd_pos_in_domain(int dom, vector<DNApos> &gene_pos,
                                vector<size_t> &Dom_size);
-  uint get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size);
-  void display_state(vector<DNApos> &Barr_pos, vector<int> &Barr_type);
+  int get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size);
   void display_state(void);
 
 public:
@@ -40,11 +39,9 @@ public:
   static void set_simulation_params(Params *params);
   static void set_target_envir(vector<double> &env);
   unsigned get_size(void) const { return _genome_size; }
-  unsigned get_n_genes(void) const { return _genes->size(); }
-  vector<Transcript> &get_genes(void) const { return *_genes; }
+  unsigned get_n_genes(void) const { return _genes.size(); }
   void update_fitness(void);
-  unsigned get_n_barriers(void) const { return _barr_fix->size(); }
-  vector<DNApos> &get_barriers(void) const { return *_barr_fix; }
+  unsigned get_n_barriers(void) const { return _barr_fix.size(); }
   float get_fitness(void) const { return _fitness; }
   void mutate(void);
   ~Individual(void); // destructor

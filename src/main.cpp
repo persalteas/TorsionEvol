@@ -7,8 +7,8 @@
 #include <fstream>
 #include <functional>
 
-static uint POP_SIZE = 1;
-static uint GEN_MAX = 10;
+static uint POP_SIZE = 10;
+static uint GEN_MAX = 100;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
@@ -41,6 +41,23 @@ int main(int argc, char **argv) {
   // define the input/output directories
   Params *params = readIni(argv[1]);
   boost::filesystem::create_directories(argv[2]); // output folder
+  ofstream scriptR;
+  scriptR.open(std::string(argv[2]) + "/plot_fit.R");
+  scriptR << "setwd('" << boost::filesystem::initial_path().string() << '/'
+          << argv[2] << "')" << std::endl;
+  scriptR << "fit = as.matrix(read.table('fitnesses.txt', sep = ''))"
+          << std::endl
+          << "m = c()\nmini = c()" << std::endl;
+  scriptR << "for (i in 1:length(fit[, 1])) {" << std::endl;
+  scriptR << "    m[i] = mean(fit[i, ]) \nmini[i] = fit[i, 1]" << std::endl;
+  scriptR << "}\nplot(m, col = 3, xlab = 'iterations', ylab = 'cost',\n";
+  scriptR << "  main = 'Evolution and convergence', type = 'l', ylim = c(0, 1))"
+          << std::endl;
+  scriptR << "lines(mini, col = 2)" << std::endl
+          << "legend('bottomleft', c('mean', 'mini'), lwd "
+             "= 1, col = c(3, 2)) "
+          << std::endl;
+  scriptR.close();
   ofstream fitnesses;
   fitnesses.open(std::string(argv[2]) + "/fitnesses.txt");
   argv[1][strlen(argv[1]) - 10] =
@@ -90,9 +107,10 @@ int main(int argc, char **argv) {
   // ====================== Topological barriers ============================
 
   std::vector<DNApos> Barr_fix; // Get the fixed topo barriers in a vector
-  std::transform(
-      prot.begin(), prot.end(), back_inserter(Barr_fix),
-      [params](prot_t const &x) { return int(x.prot_pos / params->DELTA_X); });
+  std::transform(prot.begin(), prot.end(), back_inserter(Barr_fix),
+                 [params](prot_t const &x) {
+                   return int(1 + x.prot_pos / params->DELTA_X);
+                 });
 
   // a bit of control on what happens
   std::cout << std::endl

@@ -5,12 +5,12 @@
 # project name (generate executable with this name)
 TARGET   = torsionEvol
 
-CC	   = clang++
+CC	   = g++
 # compiling flags here
 CFLAGS   = -I. -g
 CXXFLAGS = -std=c++14 -Wall -Wpedantic -Wextra
 
-LINKER   = clang++
+LINKER   = g++
 # linking flags here
 LDFLAGS   = -I. -lm -ldl -lboost_system -lboost_filesystem 
 

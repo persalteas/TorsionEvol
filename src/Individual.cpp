@@ -2,7 +2,7 @@
 #include "RNAP.h"
 #include <random>
 
-#define N_DELTA_X 500
+#define N_DELTA_X 300
 
 double Individual::_mean = 5,
        Individual::_p = 0.5; // modifiable with command line arguments 3 and 4
@@ -13,47 +13,24 @@ Random Individual::_rand_generator = Random();
 
 Individual::Individual(const Individual &indiv) {
   _genome_size = indiv._genome_size;
-  _genes = new std::vector<Transcript>(*(indiv._genes));
-  _barr_fix = new std::vector<DNApos>(*(indiv._barr_fix));
-  _fitness = indiv._fitness;
-}
-
-Individual::Individual(Individual &&indiv) {
-  _genome_size = indiv._genome_size;
-  _genes = indiv._genes; // undefined behaviour when indiv will be deleted ?
-  _barr_fix =
-      indiv._barr_fix; // undefined behaviour when indiv will be deleted ?
+  _genes = indiv._genes;
+  _barr_fix = indiv._barr_fix;
   _fitness = indiv._fitness;
 }
 
 Individual::Individual(unsigned genome_size, vector<Transcript> &tr,
                        vector<DNApos> &Barr_fix)
     : _genome_size(genome_size) {
-  _genes = new std::vector<Transcript>(tr);
-  _barr_fix = new std::vector<DNApos>(Barr_fix);
+  _genes = tr;
+  _barr_fix = Barr_fix;
   _fitness = 1.0;
 }
 
 Individual &Individual::operator=(const Individual &indiv) {
   if (this != &indiv) {
     _genome_size = indiv._genome_size;
-    delete _genes;
-    delete _barr_fix;
-    _genes = new std::vector<Transcript>(*(indiv._genes));
-    _barr_fix = new std::vector<DNApos>(*(indiv._barr_fix));
-    _fitness = indiv._fitness;
-  }
-  return *this;
-}
-
-Individual &Individual::operator=(Individual &&indiv) {
-  if (this != &indiv) {
-    delete _genes;
-    delete _barr_fix;
-    _genome_size = indiv._genome_size;
-    _genes = indiv._genes; // undefined behaviour when indiv will be deleted ?
-    _barr_fix =
-        indiv._barr_fix; // undefined behaviour when indiv will be deleted ?
+    _genes = indiv._genes;
+    _barr_fix = indiv._barr_fix;
     _fitness = indiv._fitness;
   }
   return *this;
@@ -71,71 +48,86 @@ void Individual::set_target_envir(vector<double> &env) { _target_envir = env; }
 
 void Individual::mutate(void) {
   std::vector<DNApos> genes_pos;
-  std::vector<size_t> Dom_size(2 * _genes->size(), 0);
+  std::vector<size_t> Dom_size(1 + _genes.size(), 0);
 
-  // get the start of each gene on a segment [0, _genome_size]
-  for (Transcript &tr : (*_genes)) {
+  // get the start of each gene on a segment [1, _genome_size+1]
+  for (Transcript &tr : _genes) {
     if (tr.s_ == 1) { // (+) strand
       genes_pos.push_back(tr.start_);
-      genes_pos.push_back(tr.end_ + 1);
+      genes_pos.push_back(tr.end_);
     } else { // (-) strand
       genes_pos.push_back(tr.end_);
-      genes_pos.push_back(tr.start_ + 1);
+      genes_pos.push_back(tr.start_);
     }
   }
-  // size of domains
-  adjacent_difference(genes_pos.begin(), genes_pos.end(), Dom_size.begin());
-  // (beware, adjacent_difference keeps a useless first element !)
-  Dom_size.push_back(genes_pos[0] +
-                     (_genome_size / _params->DELTA_X - genes_pos.back()));
+  genes_pos.push_back(_genome_size / _params->DELTA_X + 1);
+
+  // compute the size of domains
+  Dom_size[0] = genes_pos[0] - 1;
+  for (uint i = 2; i < genes_pos.size(); i += 2) {
+    Dom_size[i / 2] = genes_pos[i] - genes_pos[i - 1] - 1;
+  }
+  // std::cout << "\tbefore mutations: \n";
+  // display_state();
 
   // Perform indels
   uint n_indels = _rand_generator.indels_nb();
   uint indel_nb = 0;
-  uint dom, start;
+  int dom, start;
   int sense;
   DNApos pos;
 
+  cout << endl;
+  display_state();
   while (indel_nb < n_indels) {
     dom = get_rnd_dom_btwn_genes(Dom_size);
+    // cout << "\tin domain " << dom << " (from ";
+    // if (dom != -1)
+    //   cout << genes_pos[2 * dom + 1] + 1 << " to "
+    //        << genes_pos[2 * dom + 2] - 1;
+    // else
+    //   cout << "1 to " << genes_pos[0] - 1;
+    // cout << "), ";
     pos = get_rnd_pos_in_domain(dom, genes_pos, Dom_size);
 
     if (rand() % 2) {
       // insertion
-      std::cout << "\tinsertion in " << pos << ":\t";
+      std::cout << "\tinsertion in " << pos;
       sense = 1;
     } else {
       // deletion
-      std::cout << "\tdeletion in  " << pos << ":\t";
+      std::cout << "\tdeletion in  " << pos;
       sense = -1;
     }
-    Dom_size[2 + 2 * dom] += sense;
-    if ((dom == _genes->size() - 1) and (pos < genes_pos[0]))
-      start = 0;
-    else
-      start = (2 + 2 * dom);
-    for (uint i = start; i < genes_pos.size(); i++) {
-      // local vector of genes positions
-      genes_pos[i] += sense;
-      // Transcript objects
-      if (i % 2)
-        (*_genes)[i / 2].shift(sense);
-    }
-    // move topo barriers
-    for (uint i = 0; i < _barr_fix->size(); i++) {
-      if ((*_barr_fix)[i] >= pos)
-        (*_barr_fix)[i] += sense;
-    }
-    _genome_size += sense * _params->DELTA_X;
+    start = (2 + 2 * dom);
+    if (int(Dom_size[1 + dom]) + sense >= 0) {
+      // Update domain size
+      cout << endl;
+      Dom_size[1 + dom] += sense;
 
-    display_state();
+      for (uint i = start; i < genes_pos.size() - 1; i++) {
+        // Update local vector of genes positions
+        genes_pos[i] += sense;
+        // Update Transcript objects
+        if (!(i % 2)) {
+          _genes[i / 2].shift(sense);
+        }
+      }
+      // Update topo barriers
+      for (uint i = 0; i < _barr_fix.size(); i++) {
+        if (_barr_fix[i] >= pos)
+          _barr_fix[i] += sense;
+      }
+      _genome_size += sense * _params->DELTA_X;
+    }
+    // cout << endl;
+    // display_state();
     indel_nb++;
   }
 
   // Perform an inversion (or not)
   if (_rand_generator.inversion_occurs()) {
-    int d1, d2;
-    uint dom1, dom2;
+    int d1, d2, dom1, dom2;
     DNApos pos1, pos2, first, sec;
     dom1 = get_rnd_dom_btwn_genes(Dom_size);
     dom2 = get_rnd_dom_btwn_genes(Dom_size);
@@ -143,25 +135,40 @@ void Individual::mutate(void) {
     pos2 = get_rnd_pos_in_domain(dom2, genes_pos, Dom_size);
     (pos1 < pos2) ? (first = pos1, sec = pos2) : (first = pos2, sec = pos1);
     (pos1 < pos2) ? (d1 = dom1, d2 = dom2) : (d1 = dom2, d2 = dom1);
-    if (d1 == (int)dom1 and (d1 == (int)_genes->size() - 1))
-      d1 = -1;
-    std::cout << "\tinversion of [" << first << "-" << sec << "]:\t";
-    // move Transcript objects
-    auto it2 = genes_pos.begin() + 2 * d1 + 2;
-    for (auto it = _genes->begin() + d1 + 1; it < _genes->begin() + d2 + 1;
-         it++, it2 += 2) {
-      it->revert(first, sec);
+    std::cout << "\tinversion of [" << first << "-" << sec << "]\n";
+    // Update Transcript objects
+    if (d2 > d1) {
+      for (auto it = _genes.begin() + d1 + 1; it < _genes.begin() + d2 + 1;
+           it++) {
+        it->revert(first, sec);
+      }
+      std::reverse(_genes.begin() + d1 + 1, _genes.begin() + d2 + 1);
     }
-    std::reverse(_genes->begin() + d1 + 1, _genes->begin() + d2 + 1);
 
-    // move topo barriers
-    for (uint i = 0; i < _barr_fix->size(); i++) {
-      if (((*_barr_fix)[i] >= first) and ((*_barr_fix)[i] <= sec))
-        (*_barr_fix)[i] = first + sec - (*_barr_fix)[i] - 1;
+    // Update topo barriers
+    for (uint i = 0; i < _barr_fix.size(); i++) {
+      if ((_barr_fix[i] >= first) and (_barr_fix[i] <= sec))
+        _barr_fix[i] = first + sec - _barr_fix[i] - 1;
     }
-    std::sort(_barr_fix->begin(), _barr_fix->end());
-    display_state();
+    std::sort(_barr_fix.begin(), _barr_fix.end());
+
+    // // Update gene_pos local vector (useless)
+    // auto it2 = genes_pos.begin() + 2 * d1 + 2;
+    // for (auto it = _genes.begin() + d1 + 1; it < _genes.begin() + d2 + 1;
+    //      it++, it2 += 2) {
+    //   (*it2) = (it->s_ == 1) * (it->start_) + (it->s_ == -1) * (it->end_);
+    //   (*(it2 + 1)) = (it->s_ == 1) * (it->end_) + (it->s_ == -1) *
+    //   (it->start_);
+    // }
+    // // Update size of domains (useless)
+    // Dom_size[0] = genes_pos[0] - 1;
+    // for (uint i = 2; i < genes_pos.size(); i += 2) {
+    //   Dom_size[i / 2] = genes_pos[i] - genes_pos[i - 1] - 1;
+    // }
+
+    // display_state();
   }
+  display_state();
 }
 
 void Individual::update_fitness(void) {
@@ -173,7 +180,7 @@ void Individual::update_fitness(void) {
 
   // Sum the number of transcripts of each gene to compute a frequency
   double total_transcripts = 0;
-  for (auto tr = (*_genes).begin(); tr != (*_genes).end(); tr++)
+  for (auto tr = _genes.begin(); tr != _genes.end(); tr++)
     total_transcripts += tr->expr_count_;
 
   // _fitness = SUM[ | x[i] - e[i] | ] with x[i] the proportion of gene i, e[i]
@@ -181,74 +188,57 @@ void Individual::update_fitness(void) {
   _fitness = 0.0;
   for (size_t i = 0; i < _target_envir.size(); i++)
     _fitness +=
-        abs(((*_genes)[i].expr_count_ / total_transcripts) - _target_envir[i]);
+        abs((_genes[i].expr_count_ / total_transcripts) - _target_envir[i]);
   std::cout << "\tcost = " << _fitness << std::endl;
 }
 
-Individual::~Individual(void) {
-  delete _genes;
-  delete _barr_fix;
-}
+Individual::~Individual(void) {}
 
-uint Individual::get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size) {
+int Individual::get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size) {
   vector<double> domain_probs, cum_probs;
   double non_gene_cum_size = 0;
 
-  domain_probs.reserve((Dom_size.size() - 1) / 2.0);
-  cum_probs.reserve((Dom_size.size() - 1) / 2.0);
+  domain_probs.reserve(Dom_size.size());
+  cum_probs.reserve(Dom_size.size());
 
   // probability of domains
-  for (auto i = Dom_size.begin() + 2; i < Dom_size.end(); i += 2) {
-    non_gene_cum_size += *i;
-  }
-  for (auto i = Dom_size.begin() + 2; i < Dom_size.end(); i += 2) {
+  non_gene_cum_size = double(vector_sum(Dom_size));
+  for (auto i = Dom_size.begin(); i < Dom_size.end(); i++) {
     domain_probs.push_back(double(*i) / non_gene_cum_size);
   }
   // Compute cumulated probs
-  for (auto it = domain_probs.begin(); it != domain_probs.end(); it++)
+  for (auto it = domain_probs.begin() + 1; it < domain_probs.end() + 1; it++)
     cum_probs.push_back(std::accumulate(domain_probs.begin(), it, 0.0));
   // Get an index at random
   double k = rand() / double(RAND_MAX);
-  uint dom = find_if(cum_probs.begin(), cum_probs.end(),
-                     [k](double p) -> bool { return p > k; }) -
-             cum_probs.begin() - 1;
-  return dom;
+  return find_if(cum_probs.begin(), cum_probs.end(),
+                 [k](double p) -> bool { return p > k; }) -
+         cum_probs.begin() - 1;
 }
 
-DNApos Individual::get_rnd_pos_btwn_genes(vector<DNApos> &gene_pos,
-                                          vector<size_t> &Dom_size) {
-  // chose random domain in which to get a random DNApos
-  uint dom = get_rnd_dom_btwn_genes(Dom_size);
-  // chose random DNApos in domain
-  // (Domain 0 is between gene 0 and gene 1 in my model)
-  DNApos pos = gene_pos[2 * dom + 1] + (rand() % Dom_size[2 + 2 * dom]);
-  if (pos > _genome_size) // pos is from the domain which contains base n°0
-    return pos % _genome_size;
-  return pos;
-}
-
-DNApos Individual::get_rnd_pos_in_domain(uint dom, vector<DNApos> &gene_pos,
+DNApos Individual::get_rnd_pos_in_domain(int dom, vector<DNApos> &gene_pos,
                                          vector<size_t> &Dom_size) {
   // chose random DNApos in given domain
-  // (Domain 0 is between gene 0 and gene 1 in my model)
-  DNApos pos = gene_pos[2 * dom + 1] + (rand() % Dom_size[2 + 2 * dom]);
-  if (pos > _genome_size) // pos is from the domain which contains base n°0
-    return pos % _genome_size;
-  return pos;
+  // (Domain 0 is between gene 0 and gene 1 in my model, domain -1 is before
+  // gene 0)
+  if (dom == -1) {
+    return 1 + rand() % (Dom_size[0] + 1);
+  }
+  return gene_pos[2 * dom + 1] + 1 + (rand() % (Dom_size[1 + dom] + 1));
 }
 
 void Individual::estimate_exression() {
   // ====================== Topological barriers ============================
-  std::vector<uint> Barr_pos(_barr_fix->size(), 0);
-  copy(_barr_fix->begin(), _barr_fix->end(), Barr_pos.begin());
-  std::vector<int> Dom_size(_barr_fix->size(), 0);
-  std::vector<int> Barr_type(_barr_fix->size(), 0);
-  std::vector<double> Barr_sigma(_barr_fix->size(), _params->SIGMA_0);
+  std::vector<uint> Barr_pos(_barr_fix.size(), 0);
+  copy(_barr_fix.begin(), _barr_fix.end(), Barr_pos.begin());
+  std::vector<int> Dom_size(_barr_fix.size(), 0);
+  std::vector<int> Barr_type(_barr_fix.size(), 0);
+  std::vector<double> Barr_sigma(_barr_fix.size(), _params->SIGMA_0);
   // For later efficiency while inserting RNAPs in the barriers:
-  Barr_pos.reserve(_barr_fix->size() + _params->RNAPS_NB);
-  Barr_type.reserve(_barr_fix->size() + _params->RNAPS_NB);
-  Barr_sigma.reserve(_barr_fix->size() + _params->RNAPS_NB);
-  Dom_size.reserve(_barr_fix->size() + _params->RNAPS_NB);
+  Barr_pos.reserve(_barr_fix.size() + _params->RNAPS_NB);
+  Barr_type.reserve(_barr_fix.size() + _params->RNAPS_NB);
+  Barr_sigma.reserve(_barr_fix.size() + _params->RNAPS_NB);
+  Dom_size.reserve(_barr_fix.size() + _params->RNAPS_NB);
 
   // ===================== Polymerases initialization ======================
 
@@ -265,9 +255,9 @@ void Individual::estimate_exression() {
   double sum_init_rates, prob_unhooked_rate;
   size_t index, j;
   DNApos pos;
-  init_rates.reserve(_genes->size());
-  prob_init_rates.reserve(_genes->size());
-  all_prob.resize(_genes->size() + N_RNAPs_unhooked);
+  init_rates.reserve(_genes.size());
+  prob_init_rates.reserve(_genes.size());
+  all_prob.resize(_genes.size() + N_RNAPs_unhooked);
   picked_tr.reserve(N_RNAPs_unhooked);
   rm_RNAPs_idx.reserve(N_RNAPs_unhooked);
   int genome = int(_genome_size / _params->DELTA_X);
@@ -280,12 +270,12 @@ void Individual::estimate_exression() {
     init_rates.clear();
     prob_init_rates.clear();
     // get init_rate (raw)
-    for (auto it = _genes->begin(); it != _genes->end(); it++)
+    for (auto it = _genes.begin(); it != _genes.end(); it++)
       init_rates.push_back(it->f_init_rate(_params->sigma_t, _params->epsilon,
                                            _params->m, Barr_pos, Barr_sigma));
     // compute the probabilities of expression of each tr
     sum_init_rates = vector_sum(init_rates);
-    for (auto it = _genes->begin(); it != _genes->end(); it++)
+    for (auto it = _genes.begin(); it != _genes.end(); it++)
       prob_init_rates.push_back(
           it->f_prob_init_rate(sum_init_rates, _params->DELTA_T));
     // std::cout << "\t\t" << _params->RNAPS_NB - N_RNAPs_unhooked
@@ -297,13 +287,13 @@ void Individual::estimate_exression() {
           sum_init_rates, _params->DELTA_T, N_RNAPs_unhooked);
       prob_unhooked_rates.assign(N_RNAPs_unhooked, prob_unhooked_rate);
       // create an array that will contains [ 1 2 ... nTR , -1 -1 -1 ... ]
-      tss_and_unhooked_RNAPs.assign(_genes->size() + N_RNAPs_unhooked, -1);
+      tss_and_unhooked_RNAPs.assign(_genes.size() + N_RNAPs_unhooked, -1);
       iota(tss_and_unhooked_RNAPs.begin(),
-           tss_and_unhooked_RNAPs.begin() + _genes->size(), 0);
+           tss_and_unhooked_RNAPs.begin() + _genes.size(), 0);
       // concatenation of the probabilities arrays
       copy(prob_init_rates.begin(), prob_init_rates.end(), all_prob.begin());
       copy(prob_unhooked_rates.begin(), prob_unhooked_rates.end(),
-           all_prob.begin() + _genes->size());
+           all_prob.begin() + _genes.size());
       // pick up transcripts randomly
       random_choice(picked_tr, tss_and_unhooked_RNAPs, N_RNAPs_unhooked,
                     all_prob);
@@ -312,19 +302,19 @@ void Individual::estimate_exression() {
       for (int i : picked_tr) {
         // std::cout << i << ' ';
         if (i != -1) {
-          // std::cout << "(brin" << (*_genes)[i].s_ << ") ";
+          // std::cout << "(brin" << _genes[i].s_ << ") ";
           // Add a hooked polymerase in the vector, working with the chosen
           // transcript.
-          RNAPs_hooked.push_back(RNAP((*_genes)[i]));
+          RNAPs_hooked.push_back(RNAP(_genes[i]));
           N_RNAPs_unhooked--;
           // Add the RNAP in the list of topological barriers:
-          pos = (*_genes)[i].start_;
+          pos = _genes[i].start_;
           index =
               std::find_if(Barr_pos.begin(), Barr_pos.end(),
                            [pos](DNApos barr) -> bool { return barr > pos; }) -
               Barr_pos.begin();
           Barr_pos.insert(Barr_pos.begin() + index, pos);
-          Barr_type.insert(Barr_type.begin() + index, (*_genes)[i].s_);
+          Barr_type.insert(Barr_type.begin() + index, _genes[i].s_);
           Barr_sigma.insert(Barr_sigma.begin() + index, Barr_sigma[index - 1]);
         }
       }
@@ -357,7 +347,7 @@ void Individual::estimate_exression() {
     for (uint i = 0; i < RNAPs_hooked.size(); i++) {
       if (RNAPs_hooked[i].hasfinished()) {
         // std::cout << "\t\ta pol has finished !" << endl;
-        (*_genes)[RNAPs_hooked[i].tr_id_].expr_count_++;
+        _genes[RNAPs_hooked[i].tr_id_].expr_count_++;
         rm_RNAPs_idx.push_back(i);
       }
     }
@@ -438,50 +428,27 @@ void Individual::estimate_exression() {
     // display_vector(Barr_sigma);
   }
   // std::cout << "\tSimulation completed successfully !!" << std::endl;
-  // for (uint i = 0; i < _genes->size(); i++)
-  //   std::cout << "\tTranscript " << i << " : " << (*_genes)[i].expr_count_
+  // for (uint i = 0; i < _genes.size(); i++)
+  //   std::cout << "\tTranscript " << i << " : " << _genes[i].expr_count_
   //             << std::endl;
 }
 
-void Individual::display_state(vector<DNApos> &Barr_pos,
-                               vector<int> &Barr_type) {
-  char sprite[N_DELTA_X + 1];
-  for (uint i = 0; i < N_DELTA_X; i++)
-    sprite[i] = ' ';
-  sprite[N_DELTA_X] = 0;
-  // genes
-  uint i = 0;
-  for (; i < _genes->size(); i++) {
-    Transcript &tr = (*_genes)[i];
-    if (tr.s_ == 1) {
-      for (DNApos_n j = tr.start_; j <= tr.end_; j++)
-        sprite[j] = '>';
-    } else {
-      for (DNApos_n j = tr.start_; j >= tr.end_; j--)
-        sprite[j] = '<';
-    }
-    sprite[tr.start_] = '0' + i;
-  }
-  // barriers
-  for (uint i = 0; i < Barr_pos.size(); i++) {
-    if (Barr_type[i]) {
-      sprite[Barr_pos[i]] = 'O';
-    } else {
-      sprite[Barr_pos[i]] = 'X';
-    }
-  }
-  std::cout << "\t[" << sprite << ']' << std::endl;
-}
-
 void Individual::display_state(void) {
-  char sprite[N_DELTA_X + 1];
-  for (uint i = 0; i < N_DELTA_X; i++)
-    sprite[i] = ' ';
-  sprite[N_DELTA_X] = 0;
+  vector<char> sprite(_genome_size / _params->DELTA_X + 2, '.');
+  // vector<char> scale(_genome_size / _params->DELTA_X + 2, ' ');
+  sprite[_genome_size / _params->DELTA_X + 1] = 0;
+  sprite[0] = ' ';
+  // scale[_genome_size / _params->DELTA_X + 1] = 0;
+  // scale
+  // for (uint i = 1; i < scale.size(); i++) {
+  //   if (!(i % 10))
+  //     scale[i] = '|';
+  //   // if (!((i - 1) % 10))
+  //   // scale[i] = i / 10;
+  // }
   // genes
-  uint i = 0;
-  for (; i < _genes->size(); i++) {
-    Transcript &tr = (*_genes)[i];
+  for (uint i = 0; i < _genes.size(); i++) {
+    Transcript &tr = _genes[i];
     if (tr.s_ == 1) {
       for (DNApos_n j = tr.start_; j <= tr.end_; j++)
         sprite[j] = '>';
@@ -489,11 +456,12 @@ void Individual::display_state(void) {
       for (DNApos_n j = tr.start_; j >= tr.end_; j--)
         sprite[j] = '<';
     }
-    sprite[tr.start_] = '0' + i;
   }
   // barriers
-  for (uint i = 0; i < _barr_fix->size(); i++) {
-    sprite[(*_barr_fix)[i]] = 'X';
+  for (uint i = 0; i < _barr_fix.size(); i++) {
+    sprite[_barr_fix[i]] = 'X';
   }
-  std::cout << " [" << sprite << ']' << std::endl;
+  std::cout << "\t" << reinterpret_cast<char *>(sprite.data()) << std::endl;
+  // std::cout << "\t" << reinterpret_cast<char *>(scale.data()) << std::endl
+  // << std::endl;
 }

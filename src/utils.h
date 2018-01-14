@@ -151,7 +151,7 @@ template <typename T> void display_array(T &v) {
 }
 
 /* sums the elements of a vector. */
-template <typename T> T vector_sum(vector<T> &V) {
+template <typename T> T vector_sum(const vector<T> &V) {
   T sum = 0;
   for (size_t i = 0; i < V.size(); i++)
     sum += V[i];
