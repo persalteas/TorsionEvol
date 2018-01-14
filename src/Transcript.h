@@ -21,7 +21,8 @@ public:
   double f_init_rate(double sigma_t, double epsilon, double m,
                      vector<DNApos> &Barr_pos, vector<double> &Barr_sigma);
   double f_prob_init_rate(double sum_init_rates, int DELTA_T);
-  void shift(int d, int d_n);
+  void shift(int d_n);
+  void revert(DNApos posA, DNApos posB);
 
 private:
   double init_rate_;

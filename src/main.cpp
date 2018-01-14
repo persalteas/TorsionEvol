@@ -8,7 +8,7 @@
 #include <functional>
 
 static uint POP_SIZE = 1;
-static uint GEN_MAX = 5;
+static uint GEN_MAX = 10;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
@@ -20,6 +20,8 @@ vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // we keep the begining of the vector
   population.erase(population.begin() + population.size() / 2,
                    population.end());
+  std::cout << "\tkeeping the " << population.size() << " best individuals."
+            << std::endl;
 
   return population;
 }
@@ -133,12 +135,12 @@ int main(int argc, char **argv) {
                   std::mem_fun(&Individual::update_fitness));
 
     // Select the most adapted ones (fixed-size population)
-    printf("\n selection\n");
+    printf("\n selection:\n");
     population = natural_selection(population);
     printf("\n");
 
     // Display the costs
-    printf("\n printing\n");
+    printf("\n printing:\n");
     for (auto indiv = population.begin(); indiv < population.end(); indiv++)
       fitnesses << " " << (*indiv)->get_fitness();
     fitnesses << std::endl;

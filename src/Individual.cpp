@@ -2,6 +2,8 @@
 #include "RNAP.h"
 #include <random>
 
+#define N_DELTA_X 500
+
 double Individual::_mean = 5,
        Individual::_p = 0.5; // modifiable with command line arguments 3 and 4
 Params *Individual::_params = nullptr; // set later to params.ini
@@ -74,78 +76,99 @@ void Individual::mutate(void) {
   // get the start of each gene on a segment [0, _genome_size]
   for (Transcript &tr : (*_genes)) {
     if (tr.s_ == 1) { // (+) strand
-      genes_pos.push_back(tr.TSS_);
-      genes_pos.push_back(tr.TTS_ + 1);
+      genes_pos.push_back(tr.start_);
+      genes_pos.push_back(tr.end_ + 1);
     } else { // (-) strand
-      genes_pos.push_back(tr.TTS_);
-      genes_pos.push_back(tr.TSS_ + 1);
+      genes_pos.push_back(tr.end_);
+      genes_pos.push_back(tr.start_ + 1);
     }
   }
   // size of domains
   adjacent_difference(genes_pos.begin(), genes_pos.end(), Dom_size.begin());
   // (beware, adjacent_difference keeps a useless first element !)
-  Dom_size.push_back(genes_pos[0] + (_genome_size - genes_pos.back()));
-
-  std::cout << "\tbefore indels (genome size " << _genome_size << "): ";
-  display_vector(genes_pos);
+  Dom_size.push_back(genes_pos[0] +
+                     (_genome_size / _params->DELTA_X - genes_pos.back()));
 
   // Perform indels
   uint n_indels = _rand_generator.indels_nb();
   uint indel_nb = 0;
   uint dom, start;
+  int sense;
   DNApos pos;
 
   while (indel_nb < n_indels) {
     dom = get_rnd_dom_btwn_genes(Dom_size);
     pos = get_rnd_pos_in_domain(dom, genes_pos, Dom_size);
 
-    if (rand() % 2) { // insertion
-      std::cout << "\tinsertion in position " << pos << std::endl;
-      Dom_size[2 + 2 * dom] += _params->DELTA_X;
-      if ((dom == _genes->size() - 1) and (pos < genes_pos[0]))
-        start = 0;
-      else
-        start = (2 + 2 * dom);
-      for (uint i = start; i < genes_pos.size(); i++) {
-        genes_pos[i] += _params->DELTA_X; // local vector of genes positions
-        if (i % 2)
-          (*_genes)[i / 2].shift(_params->DELTA_X, 1); // Transcript objects
-      }
-
-      _genome_size += _params->DELTA_X;
-    } else { // deletion
-      std::cout << "\tdeletion in position " << pos << std::endl;
-      Dom_size[2 + 2 * dom] -= _params->DELTA_X;
-      if ((dom == _genes->size() - 1) and (pos < genes_pos[0]))
-        start = 0;
-      else
-        start = (2 + 2 * dom);
-      for (uint i = start; i < genes_pos.size(); i++) {
-        if (genes_pos[i] >= (uint)_params->DELTA_X)
-          genes_pos[i] -= _params->DELTA_X;
-        if (i % 2)
-          (*_genes)[i / 2].shift(-_params->DELTA_X, -1);
-      }
-      _genome_size -= _params->DELTA_X;
+    if (rand() % 2) {
+      // insertion
+      std::cout << "\tinsertion in " << pos << ":\t";
+      sense = 1;
+    } else {
+      // deletion
+      std::cout << "\tdeletion in  " << pos << ":\t";
+      sense = -1;
     }
+    Dom_size[2 + 2 * dom] += sense;
+    if ((dom == _genes->size() - 1) and (pos < genes_pos[0]))
+      start = 0;
+    else
+      start = (2 + 2 * dom);
+    for (uint i = start; i < genes_pos.size(); i++) {
+      // local vector of genes positions
+      genes_pos[i] += sense;
+      // Transcript objects
+      if (i % 2)
+        (*_genes)[i / 2].shift(sense);
+    }
+    // move topo barriers
+    for (uint i = 0; i < _barr_fix->size(); i++) {
+      if ((*_barr_fix)[i] >= pos)
+        (*_barr_fix)[i] += sense;
+    }
+    _genome_size += sense * _params->DELTA_X;
 
+    display_state();
     indel_nb++;
   }
-  std::cout << "\tafter indels (genome size " << _genome_size << "): ";
-  display_vector(genes_pos);
 
   // Perform an inversion (or not)
   if (_rand_generator.inversion_occurs()) {
+    int d1, d2;
+    uint dom1, dom2;
     DNApos pos1, pos2, first, sec;
-    pos1 = get_rnd_pos_btwn_genes(genes_pos, Dom_size);
-    pos2 = get_rnd_pos_btwn_genes(genes_pos, Dom_size);
-    (pos1 < pos2) ? first = pos1, sec = pos2 : first = pos2, sec = pos1;
+    dom1 = get_rnd_dom_btwn_genes(Dom_size);
+    dom2 = get_rnd_dom_btwn_genes(Dom_size);
+    pos1 = get_rnd_pos_in_domain(dom1, genes_pos, Dom_size);
+    pos2 = get_rnd_pos_in_domain(dom2, genes_pos, Dom_size);
+    (pos1 < pos2) ? (first = pos1, sec = pos2) : (first = pos2, sec = pos1);
+    (pos1 < pos2) ? (d1 = dom1, d2 = dom2) : (d1 = dom2, d2 = dom1);
+    if (d1 == (int)dom1 and (d1 == (int)_genes->size() - 1))
+      d1 = -1;
+    std::cout << "\tinversion of [" << first << "-" << sec << "]:\t";
+    // move Transcript objects
+    auto it2 = genes_pos.begin() + 2 * d1 + 2;
+    for (auto it = _genes->begin() + d1 + 1; it < _genes->begin() + d2 + 1;
+         it++, it2 += 2) {
+      it->revert(first, sec);
+    }
+    std::reverse(_genes->begin() + d1 + 1, _genes->begin() + d2 + 1);
+
+    // move topo barriers
+    for (uint i = 0; i < _barr_fix->size(); i++) {
+      if (((*_barr_fix)[i] >= first) and ((*_barr_fix)[i] <= sec))
+        (*_barr_fix)[i] = first + sec - (*_barr_fix)[i] - 1;
+    }
+    std::sort(_barr_fix->begin(), _barr_fix->end());
+    display_state();
   }
 }
 
 void Individual::update_fitness(void) {
   // Simulate the expression process. Update the expr_count_ attribute of
   // transcripts in _genes.
+  // std::cout << "\trunning Meyer's simulation, with _barr_fix: ";
+  // display_vector(*_barr_fix);
   estimate_exression();
 
   // Sum the number of transcripts of each gene to compute a frequency
@@ -159,7 +182,7 @@ void Individual::update_fitness(void) {
   for (size_t i = 0; i < _target_envir.size(); i++)
     _fitness +=
         abs(((*_genes)[i].expr_count_ / total_transcripts) - _target_envir[i]);
-  std::cout << "\tcost = " << _fitness << ",";
+  std::cout << "\tcost = " << _fitness << std::endl;
 }
 
 Individual::~Individual(void) {
@@ -249,7 +272,10 @@ void Individual::estimate_exression() {
   rm_RNAPs_idx.reserve(N_RNAPs_unhooked);
   int genome = int(_genome_size / _params->DELTA_X);
   for (size_t t = 0; t < (size_t)_params->ITERATIONS_NB; ++t) {
-    // cout << "=========== t = " << t << "===========" << endl;
+    // std::cout << "\t\t=========== t = " << t << "===========" << endl;
+    // std::cout << "\t\tt = " << t << std::endl;
+    // display_state(Barr_pos, Barr_type);
+    // getchar();
     TSS_pos_idx.clear();
     init_rates.clear();
     prob_init_rates.clear();
@@ -262,7 +288,8 @@ void Individual::estimate_exression() {
     for (auto it = _genes->begin(); it != _genes->end(); it++)
       prob_init_rates.push_back(
           it->f_prob_init_rate(sum_init_rates, _params->DELTA_T));
-    // cout << _params->RNAPS_NB - N_RNAPs_unhooked << " RNAPs working. ";
+    // std::cout << "\t\t" << _params->RNAPS_NB - N_RNAPs_unhooked
+    // << " RNAPs working. ";
     // if there are some unhooked RNAPs, hook them
     if (N_RNAPs_unhooked) {
       // get the probability for a RNAP to stay unhooked
@@ -280,12 +307,12 @@ void Individual::estimate_exression() {
       // pick up transcripts randomly
       random_choice(picked_tr, tss_and_unhooked_RNAPs, N_RNAPs_unhooked,
                     all_prob);
-      // cout << "tir des nouveaux tr: ";
+      // std::cout << "\t\ttir des nouveaux tr: ";
       // if all RNAPs are hooked, assign transcripts to RNAPs
       for (int i : picked_tr) {
-        // cout << i << ' ';
+        // std::cout << i << ' ';
         if (i != -1) {
-          // cout << "(brin" << (*_genes)[i].s_ << ") ";
+          // std::cout << "(brin" << (*_genes)[i].s_ << ") ";
           // Add a hooked polymerase in the vector, working with the chosen
           // transcript.
           RNAPs_hooked.push_back(RNAP((*_genes)[i]));
@@ -301,7 +328,7 @@ void Individual::estimate_exression() {
           Barr_sigma.insert(Barr_sigma.begin() + index, Barr_sigma[index - 1]);
         }
       }
-      // cout << endl;
+      // std::cout << std::endl;
       // Update the topological domains
       Dom_size.resize(Barr_pos.size());
       adjacent_difference(Barr_pos.begin(), Barr_pos.end(), Dom_size.begin());
@@ -315,19 +342,21 @@ void Individual::estimate_exression() {
       it->move();
     for (uint i = 0; i < Barr_pos.size(); i++)
       Barr_pos[i] += Barr_type[i];
-    // cout << "progress: ";
+
+    // std::cout << "\t\tprogress: ";
     // for (RNAP pol : RNAPs_hooked)
-    //     cout << abs(int(pol.last_pos_) - int(pol.pos_)) << " ";
-    // cout << endl;
-    // cout << "position of barriers: ";
+    //   std::cout << abs(int(pol.last_pos_) - int(pol.pos_)) << " ";
+    // std::cout << std::endl;
+    // std::cout << "\t\tposition of barriers: ";
     // for (DNApos pos : Barr_pos)
-    //     cout << pos << " ";
-    // cout << endl;
+    //   std::cout << pos << " ";
+    // std::cout << std::endl;
+
     // Check if RNAPs have finished a transcript
     rm_RNAPs_idx.clear();
     for (uint i = 0; i < RNAPs_hooked.size(); i++) {
       if (RNAPs_hooked[i].hasfinished()) {
-        // cout << "a pol has finished !" << endl;
+        // std::cout << "\t\ta pol has finished !" << endl;
         (*_genes)[RNAPs_hooked[i].tr_id_].expr_count_++;
         rm_RNAPs_idx.push_back(i);
       }
@@ -350,15 +379,17 @@ void Individual::estimate_exression() {
       N_RNAPs_unhooked++;
       j++;
     }
-    // if (rm_RNAPs_idx.size())
-    // {
-    //     cout << "removed " << rm_RNAPs_idx.size() << " polymerases." << endl;
-    //     cout << "new barriers: ";
-    //     for (DNApos pos : Barr_pos)
-    //         cout << pos << " ";
-    //     cout << endl;
-    //     cout << "hooked pols: " << RNAPs_hooked.size() << endl;
+
+    // if (rm_RNAPs_idx.size()) {
+    //   std::cout << "\t\tremoved " << rm_RNAPs_idx.size() << " polymerases."
+    //             << std::endl;
+    //   std::cout << "\t\tnew barriers: ";
+    //   for (DNApos pos : Barr_pos)
+    //     std::cout << pos << " ";
+    //   std::cout << std::endl;
+    //   std::cout << "\t\thooked pols: " << RNAPs_hooked.size() << std::endl;
     // }
+
     // Update the Dom_size:
     std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(),
                              Dom_size.begin());
@@ -403,12 +434,66 @@ void Individual::estimate_exression() {
       }
     }
     calc_sigma(Barr_sigma, _params);
-    // cout << "torsion: ";
+    // std::cout << "\t\ttorsion: ";
     // display_vector(Barr_sigma);
   }
-  // std::cout << "Simulation completed successfully !! \nNumber of transcripts
-  // : "<< endl;
-  // for (uint i=0; i<_genes->size(); i++)
-  //     std::cout << "Transcript " << i << " : " << (*_genes)[i].expr_count_ <<
-  //     endl;
+  // std::cout << "\tSimulation completed successfully !!" << std::endl;
+  // for (uint i = 0; i < _genes->size(); i++)
+  //   std::cout << "\tTranscript " << i << " : " << (*_genes)[i].expr_count_
+  //             << std::endl;
+}
+
+void Individual::display_state(vector<DNApos> &Barr_pos,
+                               vector<int> &Barr_type) {
+  char sprite[N_DELTA_X + 1];
+  for (uint i = 0; i < N_DELTA_X; i++)
+    sprite[i] = ' ';
+  sprite[N_DELTA_X] = 0;
+  // genes
+  uint i = 0;
+  for (; i < _genes->size(); i++) {
+    Transcript &tr = (*_genes)[i];
+    if (tr.s_ == 1) {
+      for (DNApos_n j = tr.start_; j <= tr.end_; j++)
+        sprite[j] = '>';
+    } else {
+      for (DNApos_n j = tr.start_; j >= tr.end_; j--)
+        sprite[j] = '<';
+    }
+    sprite[tr.start_] = '0' + i;
+  }
+  // barriers
+  for (uint i = 0; i < Barr_pos.size(); i++) {
+    if (Barr_type[i]) {
+      sprite[Barr_pos[i]] = 'O';
+    } else {
+      sprite[Barr_pos[i]] = 'X';
+    }
+  }
+  std::cout << "\t[" << sprite << ']' << std::endl;
+}
+
+void Individual::display_state(void) {
+  char sprite[N_DELTA_X + 1];
+  for (uint i = 0; i < N_DELTA_X; i++)
+    sprite[i] = ' ';
+  sprite[N_DELTA_X] = 0;
+  // genes
+  uint i = 0;
+  for (; i < _genes->size(); i++) {
+    Transcript &tr = (*_genes)[i];
+    if (tr.s_ == 1) {
+      for (DNApos_n j = tr.start_; j <= tr.end_; j++)
+        sprite[j] = '>';
+    } else {
+      for (DNApos_n j = tr.start_; j >= tr.end_; j--)
+        sprite[j] = '<';
+    }
+    sprite[tr.start_] = '0' + i;
+  }
+  // barriers
+  for (uint i = 0; i < _barr_fix->size(); i++) {
+    sprite[(*_barr_fix)[i]] = 'X';
+  }
+  std::cout << " [" << sprite << ']' << std::endl;
 }

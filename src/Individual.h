@@ -23,6 +23,8 @@ private:
   DNApos get_rnd_pos_in_domain(uint dom, vector<DNApos> &gene_pos,
                                vector<size_t> &Dom_size);
   uint get_rnd_dom_btwn_genes(const vector<size_t> &Dom_size);
+  void display_state(vector<DNApos> &Barr_pos, vector<int> &Barr_type);
+  void display_state(void);
 
 public:
   Individual(void);                    // default constructor

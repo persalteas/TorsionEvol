@@ -43,9 +43,19 @@ double Transcript::f_prob_init_rate(double sum_init_rates, int DELTA_T) {
          sum_init_rates;
 }
 
-void Transcript::shift(int d, int d_n) {
-  TSS_ += d;
-  TTS_ += d;
+void Transcript::shift(int d_n) {
+  uint d_ = d_n * size_ / size_n_;
+  TSS_ += d_;
+  TTS_ += d_;
   start_ += d_n;
   end_ += d_n;
+}
+
+void Transcript::revert(DNApos posA, DNApos posB) {
+  start_ = posA + posB - start_ - 1;
+  end_ = posA + posB - end_ - 1;
+  uint bc = (posA + posB) * size_ / size_n_;
+  TSS_ = bc - TSS_ - 1;
+  TTS_ = bc - TTS_ - 1;
+  s_ = -s_;
 }
