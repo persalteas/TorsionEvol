@@ -40,6 +40,11 @@ int main(int argc, char **argv) {
   if (argc > 5)
     Individual::set_mutation(atof(argv[4]), atof(argv[5]));
 
+  int nthreads{1};
+  if (argc == 5)
+    nthreads = atoi(argv[4]);
+  std::cout << "\nnumber of threads: " << nthreads << std::endl;
+
   srand(time(NULL));
 
   // define the input/output directories
@@ -138,12 +143,12 @@ int main(int argc, char **argv) {
   std::cout << " ok" << std::endl;
 
   // =================== Here starts the genetic algorithm =====================
-  uint generation_counter = 0;
-  while (generation_counter < GEN_MAX) {
+  for (uint generation_counter = 0; generation_counter < GEN_MAX; ++generation_counter) {
     printf("=========== GENERATION %d: =============", 1 + generation_counter);
 
     // mutate individuals
     printf("\n mutation:\n");
+    #pragma omp parallel for schedule(nonmonotonic:dynamic) num_threads(nthreads)
     for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
          indiv++) {
       Individual *new_guy = new Individual(**indiv);
@@ -153,8 +158,10 @@ int main(int argc, char **argv) {
 
     // Attribute a fitness to individuals (a cost, not really a fitness)
     printf("\n fitness:\n");
-    std::for_each(population.begin(), population.end(),
-                  std::mem_fun(&Individual::update_fitness));
+    #pragma omp parallel for schedule(nonmonotonic:dynamic) num_threads(nthreads)
+    for (auto indiv = population.begin(); indiv < population.end(); ++indiv)
+      (*indiv)->update_fitness();
+    //std::for_each(population.begin(), population.end(), std::mem_fun(&Individual::update_fitness));
 
     // Select the most adapted ones (fixed-size population)
     printf("\n selection:\n");
@@ -168,7 +175,6 @@ int main(int argc, char **argv) {
     fitnesses << std::endl;
 
     printf("\n");
-    generation_counter++;
   }
 
   // Cleaning
