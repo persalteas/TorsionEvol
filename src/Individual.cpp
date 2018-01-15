@@ -77,8 +77,8 @@ void Individual::mutate(void) {
   int sense;
   DNApos pos;
 
-  cout << endl;
-  display_state();
+  // cout << endl;
+  // display_state();
   while (indel_nb < n_indels) {
     dom = get_rnd_dom_btwn_genes(Dom_size);
     // cout << "\tin domain " << dom << " (from ";
@@ -168,7 +168,7 @@ void Individual::mutate(void) {
 
     // display_state();
   }
-  display_state();
+  // display_state();
 }
 
 void Individual::update_fitness(void) {
@@ -229,7 +229,7 @@ DNApos Individual::get_rnd_pos_in_domain(int dom, vector<DNApos> &gene_pos,
 
 void Individual::estimate_exression() {
   // ====================== Topological barriers ============================
-  std::vector<uint> Barr_pos(_barr_fix.size(), 0);
+  std::vector<uint> Barr_pos(_barr_fix.size());
   copy(_barr_fix.begin(), _barr_fix.end(), Barr_pos.begin());
   std::vector<int> Dom_size(_barr_fix.size(), 0);
   std::vector<int> Barr_type(_barr_fix.size(), 0);

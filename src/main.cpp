@@ -18,6 +18,10 @@ vector<Individual *> &natural_selection(vector<Individual *> &population) {
             });
 
   // we keep the begining of the vector
+  for (auto it = population.begin() + population.size() / 2;
+       it < population.end(); it++) {
+    delete (*it);
+  }
   population.erase(population.begin() + population.size() / 2,
                    population.end());
   std::cout << "\tkeeping the " << population.size() << " best individuals."
