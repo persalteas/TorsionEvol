@@ -96,11 +96,11 @@ void Individual::mutate(void) {
   for (uint i = 0; i < _genes.size(); i++) {
     Transcript &tr = _genes[i];
     if (tr.s_ == 1) { // (+) strand
-      genes_pos[i / 2] = tr.start_;
-      genes_pos[i / 2 + 1] = tr.end_;
+      genes_pos[2 * i] = tr.start_;
+      genes_pos[2 * i + 1] = tr.end_;
     } else { // (-) strand
-      genes_pos[i / 2] = tr.end_;
-      genes_pos[i / 2 + 1] = tr.start_;
+      genes_pos[2 * i] = tr.end_;
+      genes_pos[2 * i + 1] = tr.start_;
     }
   }
   genes_pos.push_back(_genome_size / _params->DELTA_X + 1);
@@ -473,21 +473,21 @@ void Individual::display_state(void) {
   // << std::endl;
 }
 
-Individual::~Individual(void) {
-  // delete _genes;
-  // delete _barr_fix;
-  // delete Barr_pos;
-  // delete Barr_type;
-  // delete Barr_sigma;
-  // delete Dom_size;
-  // delete Dom_size_1;
-  // delete RNAPs_hooked;
-  // delete rm_RNAPs_idx;
-  // delete tss_and_unhooked_RNAPs;
-  // delete picked_tr;
-  // delete init_rates;
-  // delete prob_init_rates;
-  // delete prob_unhooked_rates;
-  // delete all_prob;
-  // delete genes_pos;
-}
+// Individual::~Individual(void) {
+//   // delete _genes;
+//   // delete _barr_fix;
+//   // delete Barr_pos;
+//   // delete Barr_type;
+//   // delete Barr_sigma;
+//   // delete Dom_size;
+//   // delete Dom_size_1;
+//   // delete RNAPs_hooked;
+//   // delete rm_RNAPs_idx;
+//   // delete tss_and_unhooked_RNAPs;
+//   // delete picked_tr;
+//   // delete init_rates;
+//   // delete prob_init_rates;
+//   // delete prob_unhooked_rates;
+//   // delete all_prob;
+//   // delete genes_pos;
+// }

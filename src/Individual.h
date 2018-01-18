@@ -18,7 +18,7 @@ private:
   static vector<double> _target_envir; // optimal genes proportions to reach
   static Random _rand_generator;
   unsigned _genome_size{};
-  float _fitness{};
+  double _fitness{};
   vector<Transcript> _genes;
   vector<DNApos_n> _barr_fix;
   vector<uint> Barr_pos;
@@ -53,9 +53,9 @@ public:
   unsigned get_n_genes(void) const { return _genes.size(); }
   void update_fitness(void);
   unsigned get_n_barriers(void) const { return _barr_fix.size(); }
-  float get_fitness(void) const { return _fitness; }
+  double get_fitness(void) const { return _fitness; }
   void mutate(void);
-  ~Individual(void); // destructor
+  // ~Individual(void); // destructor
 };
 
 #endif

@@ -8,7 +8,7 @@
 #include <functional>
 
 static uint POP_SIZE = 10;
-static uint GEN_MAX = 10;
+static uint GEN_MAX = 100;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
@@ -18,10 +18,6 @@ vector<Individual *> &natural_selection(vector<Individual *> &population) {
             });
 
   // we keep the begining of the vector
-  for (auto it = population.begin() + population.size() / 2;
-       it < population.end(); it++) {
-    delete (*it);
-  }
   population.erase(population.begin() + population.size() / 2,
                    population.end());
   std::cout << "\tkeeping the " << population.size() << " best individuals."
@@ -143,25 +139,26 @@ int main(int argc, char **argv) {
   std::cout << " ok" << std::endl;
 
   // =================== Here starts the genetic algorithm =====================
-  for (uint generation_counter = 0; generation_counter < GEN_MAX; ++generation_counter) {
+  for (uint generation_counter = 0; generation_counter < GEN_MAX;
+       ++generation_counter) {
     printf("=========== GENERATION %d: =============", 1 + generation_counter);
 
     // Mutate individuals
     printf("\n mutation:\n");
-    #pragma omp parallel for schedule(nonmonotonic:dynamic) num_threads(nthreads)
+#pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
     for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
          indiv++) {
-      Individual *new_guy = new Individual(**indiv);
-      new_guy->mutate();
-      population.push_back(new_guy);
+      population.push_back(new Individual(**indiv));
+      population.back()->mutate();
     }
 
     // Attribute a fitness to individuals (a cost, not really a fitness)
     printf("\n fitness:\n");
-    #pragma omp parallel for schedule(nonmonotonic:dynamic) num_threads(nthreads)
+#pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
     for (auto indiv = population.begin(); indiv < population.end(); ++indiv)
       (*indiv)->update_fitness();
-    //std::for_each(population.begin(), population.end(), std::mem_fun(&Individual::update_fitness));
+    // std::for_each(population.begin(), population.end(),
+    // std::mem_fun(&Individual::update_fitness));
 
     // Select the most adapted ones (fixed-size population)
     printf("\n selection:\n");
@@ -180,8 +177,6 @@ int main(int argc, char **argv) {
   // Cleaning
   std::cout << std::endl
             << "Simulation completed. Deleting individuals..." << std::endl;
-  for (Individual *indiv : population)
-    delete indiv;
   delete params;
   fitnesses.close();
 

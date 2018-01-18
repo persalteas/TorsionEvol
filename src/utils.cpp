@@ -175,8 +175,8 @@ void random_choice(vector<int> &result, const vector<int> &array, uint n,
   result.clear();
   for (uint i = 0; i < n; ++i) {
     // Compute cumulated probs
-    for (auto it = probs.begin() + 1; it != probs.end(); it++)
-      cum_probs.push_back(std::accumulate(probs.begin(), it, 0.0));
+    for (auto it = probs.begin() + 1; it < probs.end(); it++)
+      cum_probs.push_back(std::accumulate(probs.begin(), it + 1, 0.0));
 
     // Get an available index at random
     double k = rand() / double(RAND_MAX);
