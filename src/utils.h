@@ -5,6 +5,7 @@
 #include <boost/multi_array.hpp>
 #include <iostream>
 #include <map>
+#include <cassert>
 #include <valarray>
 #include <vector>
 using namespace std;

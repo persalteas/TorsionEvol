@@ -21,14 +21,18 @@ Transcript::Transcript(const Transcript &tr)
 
 /* calculate the initiation rate (math formula) */
 double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
-                               vector<DNApos> &Barr_pos,
-                               vector<double> &Barr_sigma) {
+                               const vector<DNApos> &Barr_pos,
+                               const vector<double> &Barr_sigma) {
   // get the topological domain of this TU
   DNApos start = start_;
-  uint domain_index =
-      find_if(Barr_pos.begin(), Barr_pos.end(),
-              [start](DNApos_n barr) -> bool { return barr > start; }) -
-      Barr_pos.begin();
+  uint domain_index;
+  if (start < Barr_pos.back())
+    domain_index =
+        find_if(Barr_pos.begin(), Barr_pos.end(),
+                [start](DNApos_n barr) -> bool { return barr > start; }) -
+        Barr_pos.begin();
+  else
+    domain_index = Barr_pos.size() - 1;
   // The torsion at this TU
   double sigma_ = Barr_sigma[domain_index];
   // The init rate, function of the torsion

@@ -8,7 +8,7 @@
 #include <functional>
 
 static uint POP_SIZE = 10;
-static uint GEN_MAX = 100;
+static uint GEN_MAX = 10;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
   while (generation_counter < GEN_MAX) {
     printf("=========== GENERATION %d: =============", 1 + generation_counter);
 
-    // mutate individuals
+    // Mutate individuals
     printf("\n mutation:\n");
     for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
          indiv++) {

@@ -170,19 +170,19 @@ double f_prob_unhooked_rate(double sum_Kon, int DELTA_T,
 void random_choice(vector<int> &result, const vector<int> &array, uint n,
                    const vector<double> &proba) {
   vector<double> cum_probs;
-  vector<double> probs = proba;
-  vector<int> available = array;
+  vector<double> probs(proba);
+  vector<int> available(array);
   result.clear();
   for (uint i = 0; i < n; ++i) {
     // Compute cumulated probs
-    for (auto it = probs.begin(); it != probs.end(); it++)
+    for (auto it = probs.begin() + 1; it != probs.end(); it++)
       cum_probs.push_back(std::accumulate(probs.begin(), it, 0.0));
 
     // Get an available index at random
     double k = rand() / double(RAND_MAX);
     int index = find_if(cum_probs.begin(), cum_probs.end(),
                         [k](double p) -> bool { return p > k; }) -
-                cum_probs.begin() - 1;
+                cum_probs.begin();
     result.push_back(available[index]);
     double removed_p = probs[index];
     for (auto it = probs.begin(); it != probs.end(); it++)
@@ -196,10 +196,11 @@ void random_choice(vector<int> &result, const vector<int> &array, uint n,
 }
 
 void calc_sigma(vector<double> &Barr_sigma, Params *params) {
-  for (auto sig = Barr_sigma.begin(); sig != Barr_sigma.end(); sig++)
+  for (auto sig = Barr_sigma.begin(); sig != Barr_sigma.end(); sig++) {
     *sig += params->DELTA_T *
             (params->TOPO_CONC * params->TOPO_CTE /
                  (1 + exp(params->k_TOPO * ((*sig) - params->x0_TOPO))) -
              params->GYRASE_CONC * params->GYRASE_CTE /
                  (1 + exp(params->k_GYRASE * ((*sig) - params->x0_GYRASE))));
+  }
 }
