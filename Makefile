@@ -8,11 +8,11 @@ TARGET   = torsionEvol
 CC	   = g++
 # compiling flags here
 CFLAGS   = -I. -g
-CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra
+CXXFLAGS = -std=c++11 -Wall -Wpedantic -Wextra -fopenmp
 
 LINKER   = g++
 # linking flags here
-LDFLAGS   = -I. -lm -ldl -lboost_system -lboost_filesystem 
+LDFLAGS   = -I. -lm -ldl -lboost_system -lboost_filesystem -fopenmp
 
 # change these to proper directories where each file should be
 SRCDIR   = src
