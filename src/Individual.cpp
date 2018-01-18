@@ -147,7 +147,6 @@ void Individual::mutate(void) {
       // Update domain size
       cout << endl;
       Dom_size_1[1 + dom] += sense;
-
       for (uint i = start; i < genes_pos.size() - 1; i++) {
         // Update local vector of genes positions
         genes_pos[i] += sense;
@@ -427,8 +426,8 @@ void Individual::estimate_exression() {
     // display_vector(*Barr_pos);
     // std::cout << "\t\tsize of domains: ";
     // display_vector(*Dom_size);
-    // std::cout << "\t\tactual torsions: ";
-    // display_vector(*Barr_sigma);
+    std::cout << "\t\tactual torsions: ";
+    display_vector(Barr_sigma);
   }
   // std::cout << "\tSimulation completed successfully !!" << std::endl;
   // for (uint i = 0; i < _genes.size(); i++)
@@ -472,22 +471,3 @@ void Individual::display_state(void) {
   // std::cout << "\t" << reinterpret_cast<char *>(scale.data()) << std::endl
   // << std::endl;
 }
-
-// Individual::~Individual(void) {
-//   // delete _genes;
-//   // delete _barr_fix;
-//   // delete Barr_pos;
-//   // delete Barr_type;
-//   // delete Barr_sigma;
-//   // delete Dom_size;
-//   // delete Dom_size_1;
-//   // delete RNAPs_hooked;
-//   // delete rm_RNAPs_idx;
-//   // delete tss_and_unhooked_RNAPs;
-//   // delete picked_tr;
-//   // delete init_rates;
-//   // delete prob_init_rates;
-//   // delete prob_unhooked_rates;
-//   // delete all_prob;
-//   // delete genes_pos;
-// }

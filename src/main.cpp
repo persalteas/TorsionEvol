@@ -177,6 +177,8 @@ int main(int argc, char **argv) {
   // Cleaning
   std::cout << std::endl
             << "Simulation completed. Deleting individuals..." << std::endl;
+  for (Individual *indiv : population)
+    delete indiv;
   delete params;
   fitnesses.close();
 

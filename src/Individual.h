@@ -55,7 +55,6 @@ public:
   unsigned get_n_barriers(void) const { return _barr_fix.size(); }
   double get_fitness(void) const { return _fitness; }
   void mutate(void);
-  // ~Individual(void); // destructor
 };
 
 #endif

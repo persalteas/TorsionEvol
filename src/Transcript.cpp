@@ -32,11 +32,14 @@ double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
                 [start](DNApos_n barr) -> bool { return barr > start; }) -
         Barr_pos.begin();
   else
-    domain_index = Barr_pos.size() - 1;
+    domain_index = 0;
   // The torsion at this TU
   double sigma_ = Barr_sigma[domain_index];
   // The init rate, function of the torsion
   init_rate_ = r_ * exp(m / (1 + exp((sigma_ - sigma_t) / epsilon)));
+  if (init_rate_ != init_rate_) {
+    cout << "breakpoint" << endl;
+  }
   return init_rate_;
 }
 
@@ -47,7 +50,7 @@ double Transcript::f_prob_init_rate(double sum_init_rates, int DELTA_T) {
 }
 
 void Transcript::shift(int d_n) {
-  uint d_ = d_n * size_ / size_n_;
+  int d_ = d_n * int(size_ / size_n_);
   TSS_ += d_;
   TTS_ += d_;
   start_ += d_n;

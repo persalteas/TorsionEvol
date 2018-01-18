@@ -169,29 +169,34 @@ double f_prob_unhooked_rate(double sum_Kon, int DELTA_T,
 
 void random_choice(vector<int> &result, const vector<int> &array, uint n,
                    const vector<double> &proba) {
-  vector<double> cum_probs;
+  vector<double> cum_probs(proba.size(), 0);
   vector<double> probs(proba);
   vector<int> available(array);
   result.clear();
   for (uint i = 0; i < n; ++i) {
     // Compute cumulated probs
-    for (auto it = probs.begin() + 1; it < probs.end(); it++)
-      cum_probs.push_back(std::accumulate(probs.begin(), it + 1, 0.0));
+    for (uint i = 0; i < probs.size() - 1; i++)
+      cum_probs[i + 1] = accumulate(probs.begin(), probs.begin() + i + 2, 0.0);
 
     // Get an available index at random
     double k = rand() / double(RAND_MAX);
-    int index = find_if(cum_probs.begin(), cum_probs.end(),
-                        [k](double p) -> bool { return p > k; }) -
-                cum_probs.begin();
+    uint index = find_if(cum_probs.begin(), cum_probs.end(),
+                         [k](double p) -> bool { return p > k; }) -
+                 cum_probs.begin();
+    if (index >= available.size()) {
+      cout << "probs: ";
+      display_vector(proba);
+      cout << "k = " << k << endl;
+    }
     result.push_back(available[index]);
     double removed_p = probs[index];
     for (auto it = probs.begin(); it != probs.end(); it++)
       (*it) /= (1.0 - removed_p);
 
     // Remove the index from availables
-    cum_probs.clear();
     available.erase(available.begin() + index);
     probs.erase(probs.begin() + index);
+    cum_probs.clear();
   }
 }
 
