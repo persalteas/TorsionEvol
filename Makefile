@@ -7,7 +7,7 @@ TARGET   = torsionEvol
 
 CC	   = g++
 # compiling flags here
-CFLAGS   = -I. -g
+CFLAGS   = -I. -O3
 CXXFLAGS = -std=c++14 -Wall -Wpedantic -Wextra -fopenmp
 
 LINKER   = g++

@@ -17,7 +17,7 @@ private:
   static Params *_params;              // params from Meyer simulation
   static vector<double> _target_envir; // optimal genes proportions to reach
   static Random _rand_generator;
-  unsigned _genome_size{};
+  uint _genome_size{};
   double _fitness{};
   vector<Transcript> _genes;
   vector<DNApos_n> _barr_fix;

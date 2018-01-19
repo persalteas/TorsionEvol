@@ -6,40 +6,45 @@
 #include <ctime>
 #include <fstream>
 #include <functional>
+#include <thread>
 
 static uint POP_SIZE = 10;
-static uint GEN_MAX = 100;
+static uint GEN_MAX = 500;
 
 vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // sorts individuals by cost in increasing order
-  std::sort(population.begin(), population.end(),
-            [](Individual *a, Individual *b) {
-              return a->get_fitness() < b->get_fitness();
-            });
+  sort(population.begin(), population.end(), [](Individual *a, Individual *b) {
+    return a->get_fitness() < b->get_fitness();
+  });
 
   // we keep the begining of the vector
   population.erase(population.begin() + population.size() / 2,
                    population.end());
-  std::cout << "\tkeeping the " << population.size() << " best individuals."
-            << std::endl;
+  // cout << "\tkeeping the " << population.size() << " best individuals."
+  // << endl;
 
   return population;
 }
 
 int main(int argc, char **argv) {
   if (argc == 1)
-    std::cout << "torsionEvol path/to/params.ini path/to/working/folder "
-                 "path/to/environment.dat[ IndelPoissonMean InvP ]"
-              << std::endl;
+    cout << "torsionEvol   path/to/params.ini   name_of_the_run   "
+            "path/to/environment.dat   POP_SIZE   GEN_MAX  [ IndelPoissonMean "
+            "InvP ]"
+         << endl
+         << "torsionEvol   path/to/params.ini   name_of_the_run   "
+            "path/to/environment.dat   POP_SIZE   GEN_MAX  [ nThreads ]"
+         << endl;
   if (argc == 1)
     return EXIT_FAILURE;
   if (argc > 5)
     Individual::set_mutation(atof(argv[4]), atof(argv[5]));
 
-  int nthreads{1};
+  int nthreads = std::thread::hardware_concurrency();
+  int time_start = time(NULL);
   if (argc == 5)
     nthreads = atoi(argv[4]);
-  std::cout << "\nnumber of threads: " << nthreads << std::endl;
+  cout << "number of threads: " << nthreads << endl;
 
   srand(time(NULL));
 
@@ -47,27 +52,25 @@ int main(int argc, char **argv) {
   Params *params = readIni(argv[1]);
   boost::filesystem::create_directories(argv[2]); // output folder
   ofstream scriptR;
-  scriptR.open(std::string(argv[2]) + "/plot_fit.R");
+  scriptR.open(string(argv[2]) + "/plot_results.R");
   scriptR << "setwd('" << boost::filesystem::initial_path().string() << '/'
-          << argv[2] << "')" << std::endl;
-  scriptR << "fit = as.matrix(read.table('fitnesses.txt', sep = ''))"
-          << std::endl
-          << "m = c()\nmini = c()" << std::endl;
-  scriptR << "for (i in 1:length(fit[, 1])) {" << std::endl;
-  scriptR << "    m[i] = mean(fit[i, ]) \nmini[i] = fit[i, 1]" << std::endl;
+          << argv[2] << "')" << endl;
+  scriptR << "fit = as.matrix(read.table('fitnesses.txt', sep = ''))" << endl
+          << "m = c()\nmini = c()" << endl;
+  scriptR << "for (i in 1:length(fit[, 1])) {" << endl;
+  scriptR << "    m[i] = mean(fit[i, ]) \nmini[i] = fit[i, 1]" << endl;
   scriptR << "}\nplot(m, col = 3, xlab = 'iterations', ylab = 'cost',\n";
   scriptR << "  main = 'Evolution and convergence', type = 'l', ylim = c(0, 1))"
-          << std::endl;
-  scriptR << "lines(mini, col = 2)" << std::endl
+          << endl;
+  scriptR << "lines(mini, col = 2)" << endl
           << "legend('bottomleft', c('mean', 'mini'), lwd "
              "= 1, col = c(3, 2)) "
-          << std::endl;
+          << endl;
   scriptR.close();
   ofstream fitnesses;
-  fitnesses.open(std::string(argv[2]) + "/fitnesses.txt");
-  argv[1][strlen(argv[1]) - 10] =
-      0;                     // removes "params.ini" in "path/to/params.ini"
-  const char *pth = argv[1]; // by setting "p" to 0 (end of string)
+  fitnesses.open(string(argv[2]) + "/fitnesses.txt");
+  argv[1][strlen(argv[1]) - 10] = 0; // removes params.ini in path/to/params.ini
+  const char *pth = argv[1];         // by setting "p" to 0 (end of string)
 
   // read files. The "file" types are vectors of structs
   prot_file prot;
@@ -95,8 +98,8 @@ int main(int argc, char **argv) {
     vector<uint> this_TU_tts = TU_tts[this_TSS.TUindex];
 
     float proba_rest = 1.0;
-    uint k =
-        0; // Start scanning TTS.dat lines from the TUindex of this_TU_tts[0]
+    uint k = 0;
+    // Start scanning TTS.dat lines from the TUindex of this_TU_tts[0]
     while (proba_rest > 0 and k < this_TU_tts.size()) {
       TTS_t this_TTS = tts[this_TU_tts[k]];
       tr.push_back(Transcript(
@@ -111,77 +114,80 @@ int main(int argc, char **argv) {
 
   // ====================== Topological barriers ============================
 
-  std::vector<DNApos> Barr_fix; // Get the fixed topo barriers in a vector
-  std::transform(prot.begin(), prot.end(), back_inserter(Barr_fix),
-                 [params](prot_t const &x) {
-                   return int(1 + x.prot_pos / params->DELTA_X);
-                 });
+  vector<DNApos> Barr_fix; // Get the fixed topo barriers in a vector
+  transform(prot.begin(), prot.end(), back_inserter(Barr_fix),
+            [params](prot_t const &x) {
+              return int(1 + x.prot_pos / params->DELTA_X);
+            });
 
   // a bit of control on what happens
-  std::cout << std::endl
-            << "Starting with individuals with the following genome:"
-            << std::endl;
+  cout << endl
+       << "Starting with " << POP_SIZE
+       << " individuals with the following genome:" << endl;
   for (Transcript t : tr) {
-    std::cout << "TU n°" << t.TUindex_ << ": ";
-    std::cout << t.TSS_ << '-' << t.TTS_ << " (length = " << t.size_
-              << "), strand ";
-    std::cout << t.s_ << " with rate " << t.r_ << std::endl;
+    cout << "TU n°" << t.TUindex_ << ": ";
+    cout << t.TSS_ << '-' << t.TTS_ << " (length = " << t.size_ << "), strand ";
+    cout << t.s_ << " with rate " << t.r_ << endl;
   }
-  std::cout << std::endl;
+  cout << endl;
 
   // Creation of the population:
-  std::cout << "Creating " << POP_SIZE << " individuals...";
   vector<Individual *> population;
   population.reserve(2 * POP_SIZE);
   uint genome_size = get_genome_size(gff_df_raw);
   for (uint i = 0; i < POP_SIZE; ++i)
     population.push_back(new Individual(genome_size, tr, Barr_fix));
-  std::cout << " ok" << std::endl;
 
   // =================== Here starts the genetic algorithm =====================
   for (uint generation_counter = 0; generation_counter < GEN_MAX;
        ++generation_counter) {
-    printf("=========== GENERATION %d: =============", 1 + generation_counter);
+    printf("=========== GENERATION %d =============", 1 + generation_counter);
 
-    // Mutate individuals
-    printf("\n mutation:\n");
+// Mutate individuals
+// printf("\n mutation:\n");
 #pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
-    for (auto indiv = population.begin(); indiv < population.begin() + POP_SIZE;
-         indiv++) {
-      population.push_back(new Individual(**indiv));
-      population.back()->mutate();
+    for (uint i = 0; i < POP_SIZE; i++) {
+      Individual *new_guy = new Individual(*(population[i]));
+      new_guy->mutate();
+      population.push_back(new_guy);
     }
 
-    // Attribute a fitness to individuals (a cost, not really a fitness)
-    printf("\n fitness:\n");
+// Attribute a fitness to individuals (a cost, not really a fitness)
+// printf("\n fitness:\n");
 #pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
-    for (auto indiv = population.begin(); indiv < population.end(); ++indiv)
+    for (auto indiv = population.begin(); indiv < population.end(); ++indiv) {
       (*indiv)->update_fitness();
-    // std::for_each(population.begin(), population.end(),
-    // std::mem_fun(&Individual::update_fitness));
-
+    }
     // Select the most adapted ones (fixed-size population)
-    printf("\n selection:\n");
+    // printf("\n selection:\n");
     population = natural_selection(population);
-    printf("\n");
+    // printf("\n");
 
     // Display the costs
-    printf("\n printing:\n");
+    // printf("\n printing:\n");
     for (auto indiv = population.begin(); indiv < population.end(); indiv++)
       fitnesses << " " << (*indiv)->get_fitness();
-    fitnesses << std::endl;
+    fitnesses << endl;
 
     printf("\n");
   }
 
+  int time_end = time(NULL);
+  int time_full = time_end - time_start;
+  cout << endl
+       << "Simulation completed in " << time_full / 60 << "min "
+       << time_full % 60 << "s. Deleting individuals..." << endl;
+
   // Cleaning
-  std::cout << std::endl
-            << "Simulation completed. Deleting individuals..." << std::endl;
   for (Individual *indiv : population)
     delete indiv;
   delete params;
   fitnesses.close();
 
+  // Plot with R
+  string Rcmd("Rscript " + string(argv[2]) + "/plot_results.R");
+  int result = system(Rcmd.c_str());
+
   // Exiting
-  return (EXIT_SUCCESS);
+  return (EXIT_SUCCESS + result);
 }

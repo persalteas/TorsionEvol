@@ -38,7 +38,7 @@ double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
   // The init rate, function of the torsion
   init_rate_ = r_ * exp(m / (1 + exp((sigma_ - sigma_t) / epsilon)));
   if (init_rate_ != init_rate_) {
-    cout << "breakpoint" << endl;
+    cout << "## erreur, init_rate = nan ##" << endl;
   }
   return init_rate_;
 }
@@ -58,10 +58,10 @@ void Transcript::shift(int d_n) {
 }
 
 void Transcript::revert(DNApos posA, DNApos posB) {
-  start_ = posA + posB - start_ - 1;
-  end_ = posA + posB - end_ - 1;
+  start_ = posA + posB - start_;
+  end_ = posA + posB - end_;
   uint bc = (posA + posB) * size_ / size_n_;
-  TSS_ = bc - TSS_ - 1;
-  TTS_ = bc - TTS_ - 1;
+  TSS_ = bc - TSS_;
+  TTS_ = bc - TTS_;
   s_ = -s_;
 }

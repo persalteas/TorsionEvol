@@ -2,12 +2,10 @@
 #include "RNAP.h"
 #include <random>
 
-#define N_DELTA_X 300
-
 double Individual::_mean = 5,
        Individual::_p = 0.5; // modifiable with command line arguments 3 and 4
 Params *Individual::_params = nullptr; // set later to params.ini
-float Individual::_RNAPs_genSC = 0.1;  // not modifiable (yet)
+float Individual::_RNAPs_genSC = 0.0;  // not modifiable (yet)
 vector<double> Individual::_target_envir;
 Random Individual::_rand_generator = Random();
 
@@ -110,7 +108,11 @@ void Individual::mutate(void) {
   for (uint i = 2; i < genes_pos.size(); i += 2) {
     Dom_size_1[i / 2] = genes_pos[i] - genes_pos[i - 1] - 1;
   }
-  // std::cout << "\tbefore mutations: \n";
+  // cout << "\tbefore mutations: \n";
+  // cout << "\tgenes positions: ";
+  // display_vector(genes_pos);
+  // cout << "\tbarriers positions: ";
+  // display_vector(_barr_fix);
   // display_state();
 
   // Perform indels
@@ -135,17 +137,17 @@ void Individual::mutate(void) {
 
     if (rand() % 2) {
       // insertion
-      std::cout << "\tinsertion in " << pos;
+      // cout << "\tinsertion in " << pos;
       sense = 1;
     } else {
       // deletion
-      std::cout << "\tdeletion in  " << pos;
+      // cout << "\tdeletion in  " << pos;
       sense = -1;
     }
     start = (2 + 2 * dom);
     if (int(Dom_size_1[1 + dom]) + sense >= 0) {
       // Update domain size
-      cout << endl;
+      // cout << endl;
       Dom_size_1[1 + dom] += sense;
       for (uint i = start; i < genes_pos.size() - 1; i++) {
         // Update local vector of genes positions
@@ -157,12 +159,17 @@ void Individual::mutate(void) {
       }
       // Update topo barriers
       for (uint i = 0; i < _barr_fix.size(); i++) {
-        if (_barr_fix[i] >= pos)
-          _barr_fix[i] += sense;
+        if (_barr_fix[i] >= pos and sense == 1)
+          _barr_fix[i]++;
+        if (_barr_fix[i] > pos and sense == -1)
+          _barr_fix[i]--;
       }
       _genome_size += sense * _params->DELTA_X;
     }
-    // cout << endl;
+    // cout << "\tgenes positions: ";
+    // display_vector(genes_pos);
+    // cout << "\tbarriers positions: ";
+    // display_vector(_barr_fix);
     // display_state();
     indel_nb++;
   }
@@ -177,46 +184,34 @@ void Individual::mutate(void) {
     pos2 = get_rnd_pos_in_domain(dom2);
     (pos1 < pos2) ? (first = pos1, sec = pos2) : (first = pos2, sec = pos1);
     (pos1 < pos2) ? (d1 = dom1, d2 = dom2) : (d1 = dom2, d2 = dom1);
-    std::cout << "\tinversion of [" << first << "-" << sec << "]\n";
+    // cout << "\tinversion of [" << first << "-" << sec << "]\n";
     // Update Transcript objects
     if (d2 > d1) {
       for (auto it = _genes.begin() + d1 + 1; it < _genes.begin() + d2 + 1;
            it++) {
         it->revert(first, sec);
       }
-      std::reverse(_genes.begin() + d1 + 1, _genes.begin() + d2 + 1);
+      reverse(_genes.begin() + d1 + 1, _genes.begin() + d2 + 1);
     }
 
     // Update topo barriers
     for (uint i = 0; i < _barr_fix.size(); i++) {
       if ((_barr_fix[i] >= first) and (_barr_fix[i] <= sec))
-        _barr_fix[i] = first + sec - _barr_fix[i] - 1;
+        _barr_fix[i] = first + sec - _barr_fix[i];
     }
-    std::sort(_barr_fix.begin(), _barr_fix.end());
-
-    // // Update gene_pos local vector (useless)
-    // auto it2 = genes_pos.begin() + 2 * d1 + 2;
-    // for (auto it = _genes.begin() + d1 + 1; it < _genes.begin() + d2 + 1;
-    //      it++, it2 += 2) {
-    //   (*it2) = (it.s_ == 1) * (it.start_) + (it.s_ == -1) * (it.end_);
-    //   (*(it2 + 1)) = (it.s_ == 1) * (it.end_) + (it.s_ == -1) *
-    //   (it.start_);
-    // }
-    // // Update size of domains (useless)
-    // Dom_size_1[0] = genes_pos[0] - 1;
-    // for (uint i = 2; i < genes_pos.size(); i += 2) {
-    //   Dom_size_1[i / 2] = genes_pos[i] - genes_pos[i - 1] - 1;
-    // }
-
-    // display_state();
+    sort(_barr_fix.begin(), _barr_fix.end());
   }
+  // cout << "\tgenes positions: ";
+  // display_vector(genes_pos);
+  // cout << "\tbarriers positions: ";
+  // display_vector(_barr_fix);
   // display_state();
 }
 
 void Individual::update_fitness(void) {
   // Simulate the expression process. Update the expr_count_ attribute of
   // transcripts in _genes.
-  // std::cout << "\trunning Meyer's simulation, with _barr_fix: ";
+  // cout << "\trunning Meyer's simulation, with _barr_fix: ";
   // display_vector(*_barr_fix);
   estimate_exression();
 
@@ -231,7 +226,7 @@ void Individual::update_fitness(void) {
   for (size_t i = 0; i < _target_envir.size(); i++)
     _fitness +=
         abs((_genes[i].expr_count_ / total_transcripts) - _target_envir[i]);
-  std::cout << "\tcost = " << _fitness << std::endl;
+  // cout << "\tcost = " << _fitness << endl;
 }
 
 int Individual::get_rnd_dom_btwn_genes(void) {
@@ -248,7 +243,7 @@ int Individual::get_rnd_dom_btwn_genes(void) {
   }
   // Compute cumulated probs
   for (auto it = domain_probs.begin() + 1; it < domain_probs.end() + 1; it++)
-    cum_probs.push_back(std::accumulate(domain_probs.begin(), it, 0.0));
+    cum_probs.push_back(accumulate(domain_probs.begin(), it, 0.0));
   // Get an index at random
   double k = rand() / double(RAND_MAX);
   return find_if(cum_probs.begin(), cum_probs.end(),
@@ -263,14 +258,17 @@ DNApos Individual::get_rnd_pos_in_domain(int dom) {
   if (dom == -1) {
     return 1 + rand() % (Dom_size_1[0] + 1);
   }
-  return genes_pos[2 * dom + 1] + 1 + (rand() % (Dom_size_1[1 + dom] + 1));
+  return genes_pos[2 * dom + 1] + 1 + (rand() % (Dom_size_1[1 + dom]));
 }
 
 void Individual::estimate_exression() {
   Barr_pos.resize(_barr_fix.size());
   copy(_barr_fix.begin(), _barr_fix.end(), Barr_pos.begin());
+  Dom_size.clear();
   Dom_size.resize(_barr_fix.size(), 0);
+  Barr_type.clear(); // IMPORTANT ! Deletes the old types of previous iteration.
   Barr_type.resize(_barr_fix.size(), 0);
+  Barr_sigma.clear();
   Barr_sigma.resize(_barr_fix.size(), _params->SIGMA_0);
   tss_and_unhooked_RNAPs.clear();
   picked_tr.clear();
@@ -281,21 +279,21 @@ void Individual::estimate_exression() {
 
   // ===================== Simulation ======================================
 
-  std::valarray<bool> isfinished;
+  valarray<bool> isfinished;
   double sum_init_rates;
   size_t index, j;
   DNApos pos;
   int genome = int(_genome_size / _params->DELTA_X);
   // display_state();
-  // std::cout << "\t\tposition of barriers: ";
+  // cout << "\t\tposition of barriers: ";
   // display_vector(*);
-  // std::cout << "\t\tsize of domains: ";
+  // cout << "\t\tsize of domains: ";
   // display_vector(*Dom_size);
-  // std::cout << "\t\tactual torsions: ";
+  // cout << "\t\tactual torsions: ";
   // display_vector(*Barr_sigma);
   for (size_t t = 0; t < (size_t)_params->ITERATIONS_NB; ++t) {
-    // std::cout << "\n\t\t=========== t = " << t << "===========" << endl;
-    // std::cout << "\t\t" << _params->RNAPS_NB - N_RNAPs_unhooked
+    // cout << "\n\t\t=========== t = " << t << "===========" << endl;
+    // cout << "\t\t" << _params->RNAPS_NB - N_RNAPs_unhooked
     //           << " RNAPs working. ";
 
     // ============== try to bind unbound RNAPs ===============
@@ -326,28 +324,27 @@ void Individual::estimate_exression() {
       // pick up transcripts randomly
       random_choice(picked_tr, tss_and_unhooked_RNAPs, N_RNAPs_unhooked,
                     all_prob);
-      // std::cout << "\t\ttir des nouveaux tr: ";
+      // cout << "\t\ttir des nouveaux tr: ";
       for (int i : picked_tr) {
-        // std::cout << i << ' ';
+        // cout << i << ' ';
         if (i != -1) {
-          // std::cout << "(brin" << _genes[i].s_ << ") ";
+          // cout << "(brin" << _genes[i].s_ << ") ";
           // Add a hooked polymerase in the vector, working with the chosen
           // transcript.
           RNAPs_hooked.push_back(RNAP(_genes[i]));
           N_RNAPs_unhooked--;
           // Add the RNAP in the list of topological barriers:
           pos = _genes[i].start_;
-          index =
-              std::find_if(Barr_pos.begin(), Barr_pos.end(),
-                           [pos](DNApos barr) -> bool { return barr > pos; }) -
-              Barr_pos.begin();
+          index = find_if(Barr_pos.begin(), Barr_pos.end(),
+                          [pos](DNApos barr) -> bool { return barr > pos; }) -
+                  Barr_pos.begin();
           Barr_pos.insert(Barr_pos.begin() + index, pos);
           Barr_type.insert(Barr_type.begin() + index, _genes[i].s_);
           Barr_sigma.insert(Barr_sigma.begin() + index,
                             Barr_sigma[index * (index != Barr_sigma.size())]);
           Dom_size.push_back(0); // just to increase its size
-          std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(),
-                                   Dom_size.begin());
+          adjacent_difference(Barr_pos.begin(), Barr_pos.end(),
+                              Dom_size.begin());
           Dom_size[0] += (genome - Barr_pos.back());
         }
       }
@@ -374,25 +371,42 @@ void Individual::estimate_exression() {
         index = find_if(Barr_pos.begin(), Barr_pos.end(),
                         [pos](DNApos barr) -> bool { return barr > pos; }) -
                 Barr_pos.begin();
-        // cout << "\t\tunhooking " << *it << " from pos " << pos << endl;
+        // cout << "\t\tunhooking " << *it << " from pos " << pos
+        //      << ", index=" << index << endl;
         // remove it and update barriers, domains, and sigma
-        Barr_sigma[index] = (Dom_size[index] * Barr_sigma[index] +
-                             Dom_size[index - 1] * Barr_sigma[index - 1]) /
-                            (Dom_size[index] + Dom_size[index - 1]);
-        Dom_size[index] = Dom_size[index] + Dom_size[index - 1];
+        if (index < Barr_sigma.size()) {
+          Barr_sigma[index] = (Dom_size[index] * Barr_sigma[index] +
+                               Dom_size[index - 1] * Barr_sigma[index - 1]) /
+                              (Dom_size[index] + Dom_size[index - 1]);
+          Dom_size[index] = Dom_size[index] + Dom_size[index - 1];
+        } else { // we remove the last barr of the vector
+          Barr_sigma[0] = (Dom_size[0] * Barr_sigma[0] +
+                           Dom_size[index - 1] * Barr_sigma[index - 1]) /
+                          (Dom_size[0] + Dom_size[index - 1]);
+          Dom_size[0] = Dom_size[0] + Dom_size[index - 1];
+        }
         Barr_pos.erase(Barr_pos.begin() + index - 1);
         Barr_type.erase(Barr_type.begin() + index - 1);
         Barr_sigma.erase(Barr_sigma.begin() + index - 1);
         Dom_size.erase(Dom_size.begin() + index - 1);
-        std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(),
-                                 Dom_size.begin());
+
+        adjacent_difference(Barr_pos.begin(), Barr_pos.end(), Dom_size.begin());
         Dom_size[0] += (genome - Barr_pos.back());
         RNAPs_hooked.erase(RNAPs_hooked.begin() + (*it) - j);
         N_RNAPs_unhooked++;
         j++;
       }
-      // std::cout << "\t\tremoved " << rm_RNAPs_idx.size() << " polymerases."
-      //           << std::endl;
+      // cout << "\t\tremoved " << rm_RNAPs_idx.size() << " polymerases."
+      //           << endl;
+      // cout << "\t\ttype of barriers: ";
+      // display_vector(Barr_type);
+      // cout << "\t\tposition of barriers: ";
+      // display_vector(Barr_pos);
+      // cout << "\t\tsize of domains: (" << Dom_size.size() << ") ";
+      // display_vector(Dom_size);
+      // cout << "\t\tactual torsions: (" << Barr_sigma.size() << ") ";
+      // display_vector(Barr_sigma);
+      // cout << endl;
     }
 
     // ========== Move each polymerase on its transcript =================
@@ -404,12 +418,14 @@ void Individual::estimate_exression() {
     // ================== Update domain vectors ==========================
     // Dom_size[i] and Barr_sigma[i] correspond to the domain before barrier
     // Barr_pos[i] of type Barr_type[i]
-    std::adjacent_difference(Barr_pos.begin(), Barr_pos.end(),
-                             Dom_size.begin());
+    adjacent_difference(Barr_pos.begin(), Barr_pos.end(), Dom_size.begin());
     Dom_size[0] += (genome - Barr_pos.back());
     double a, b, d;
     for (uint i = 0; i < Barr_sigma.size(); i++) {
-      a = Barr_type[(i - 1) * (i > 0) + (Barr_sigma.size() - 1) * (!i)];
+      if (i)
+        a = Barr_type[i - 1];
+      else
+        a = Barr_type.back();
       b = Barr_type[i];
       d = Dom_size[i];
       Barr_sigma[i] *= (d + (a - b) * (1.0 + _RNAPs_genSC)) / d;
@@ -417,22 +433,25 @@ void Individual::estimate_exression() {
     calc_sigma(Barr_sigma, _params);
 
     // =================== display user infos ===========================
-    // std::cout << "\t\tprogress: ";
+    // cout << "\t\tprogress: ";
     // for (RNAP pol : (*RNAPs_hooked))
-    //   std::cout << abs(int(pol.last_pos_) - int(pol.pos_)) << " ";
-    // std::cout << std::endl;
+    //   cout << abs(int(pol.last_pos_) - int(pol.pos_)) << " ";
+    // cout << endl;
     // display_state();
-    // std::cout << "\t\tposition of barriers: ";
-    // display_vector(*Barr_pos);
-    // std::cout << "\t\tsize of domains: ";
-    // display_vector(*Dom_size);
-    std::cout << "\t\tactual torsions: ";
-    display_vector(Barr_sigma);
+    // cout << "\t\ttype of barriers    : ";
+    // display_vector(Barr_type);
+    // cout << "\t\tposition of barriers: ";
+    // display_vector(Barr_pos);
+    // cout << "\t\tsize of domains: (" << Dom_size.size() << ") ";
+    // display_vector(Dom_size);
+    // cout << "\t\tactual torsions: (" << Barr_sigma.size() << ") ";
+    // display_vector(Barr_sigma);
+    // cout << endl;
   }
-  // std::cout << "\tSimulation completed successfully !!" << std::endl;
+  // cout << "\tSimulation completed successfully !!" << endl;
   // for (uint i = 0; i < _genes.size(); i++)
-  //   std::cout << "\tTranscript " << i << " : " << _genes[i].expr_count_
-  //             << std::endl;
+  //   cout << "\tTranscript " << i << " : " << _genes[i].expr_count_
+  //             << endl;
 }
 
 void Individual::display_state(void) {
@@ -459,6 +478,10 @@ void Individual::display_state(void) {
         sprite[j] = '<';
     }
   }
+  // fix barriers
+  for (uint i = 0; i < _barr_fix.size(); i++) {
+    sprite[_barr_fix[i]] = 'X';
+  }
   // barriers
   for (uint i = 0; i < Barr_pos.size(); i++) {
     if (Barr_type[i]) {
@@ -467,7 +490,7 @@ void Individual::display_state(void) {
       sprite[Barr_pos[i]] = 'X';
     }
   }
-  std::cout << "\t\t" << reinterpret_cast<char *>(sprite.data()) << std::endl;
-  // std::cout << "\t" << reinterpret_cast<char *>(scale.data()) << std::endl
-  // << std::endl;
+  cout << "\t" << reinterpret_cast<char *>(sprite.data()) << endl;
+  // cout << "\t" << reinterpret_cast<char *>(scale.data()) << endl
+  // << endl;
 }
