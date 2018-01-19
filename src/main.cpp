@@ -20,8 +20,8 @@ vector<Individual *> &natural_selection(vector<Individual *> &population) {
   // we keep the begining of the vector
   population.erase(population.begin() + population.size() / 2,
                    population.end());
-  // cout << "\tkeeping the " << population.size() << " best individuals."
-  // << endl;
+  // cout << "\tkeeping the " << population.size() << " best individuals." <<
+  // endl;
 
   return population;
 }
@@ -37,13 +37,15 @@ int main(int argc, char **argv) {
          << endl;
   if (argc == 1)
     return EXIT_FAILURE;
-  if (argc > 5)
+  POP_SIZE = atoi(argv[4]);
+  GEN_MAX = atoi(argv[5]);
+  if (argc > 7)
     Individual::set_mutation(atof(argv[4]), atof(argv[5]));
 
-  int nthreads = std::thread::hardware_concurrency();
+  int nthreads = thread::hardware_concurrency();
   int time_start = time(NULL);
-  if (argc == 5)
-    nthreads = atoi(argv[4]);
+  if (argc == 7)
+    nthreads = atoi(argv[6]);
   cout << "number of threads: " << nthreads << endl;
 
   srand(time(NULL));
@@ -143,9 +145,8 @@ int main(int argc, char **argv) {
        ++generation_counter) {
     printf("=========== GENERATION %d =============", 1 + generation_counter);
 
-// Mutate individuals
-// printf("\n mutation:\n");
-#pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
+    // Mutate individuals
+    // printf("\n mutation:\n");
     for (uint i = 0; i < POP_SIZE; i++) {
       Individual *new_guy = new Individual(*(population[i]));
       new_guy->mutate();
@@ -154,10 +155,11 @@ int main(int argc, char **argv) {
 
 // Attribute a fitness to individuals (a cost, not really a fitness)
 // printf("\n fitness:\n");
-#pragma omp parallel for schedule(nonmonotonic : dynamic) num_threads(nthreads)
-    for (auto indiv = population.begin(); indiv < population.end(); ++indiv) {
-      (*indiv)->update_fitness();
+#pragma omp parallel for schedule(static) num_threads(nthreads)
+    for (uint i = 0; i < population.size(); i++) {
+      population[i]->update_fitness();
     }
+
     // Select the most adapted ones (fixed-size population)
     // printf("\n selection:\n");
     population = natural_selection(population);
