@@ -21,8 +21,8 @@ Transcript::Transcript(const Transcript &tr)
 
 /* calculate the initiation rate (math formula) */
 double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
-                               const vector<DNApos> &Barr_pos,
-                               const vector<double> &Barr_sigma) {
+                               const std::vector<DNApos> &Barr_pos,
+                               const std::vector<double> &Barr_sigma) {
   // get the topological domain of this TU
   DNApos start = start_;
   uint domain_index;
@@ -38,7 +38,7 @@ double Transcript::f_init_rate(double sigma_t, double epsilon, double m,
   // The init rate, function of the torsion
   init_rate_ = r_ * exp(m / (1 + exp((sigma_ - sigma_t) / epsilon)));
   if (init_rate_ != init_rate_) {
-    cout << "## erreur, init_rate = nan ##" << endl;
+    std::cout << "## erreur, init_rate = nan ##" << std::endl;
   }
   return init_rate_;
 }

@@ -6,34 +6,34 @@ double Individual::_mean = 5,
        Individual::_p = 0.5; // modifiable with command line arguments 3 and 4
 Params *Individual::_params = nullptr; // set later to params.ini
 float Individual::_RNAPs_genSC = 0.0;  // not modifiable (yet)
-vector<double> Individual::_target_envir;
+std::vector<double> Individual::_target_envir;
 Random Individual::_rand_generator = Random();
 
-Individual::Individual(unsigned genome_size, vector<Transcript> &tr,
-                       vector<DNApos> &Barr_fix) {
+Individual::Individual(unsigned genome_size, std::vector<Transcript> &tr,
+                       std::vector<DNApos> &Barr_fix) {
   // First constructor used when loading data from param files
   _genome_size = genome_size;
   _fitness = 1.0;
-  _genes = vector<Transcript>(tr);
-  _barr_fix = vector<DNApos_n>(Barr_fix);
+  _genes = std::vector<Transcript>(tr);
+  _barr_fix = std::vector<DNApos_n>(Barr_fix);
   size_t a = _barr_fix.size();
   size_t b = _params->RNAPS_NB;
   size_t c = a + b;
   size_t d = _genes.size();
-  Barr_pos = vector<uint>(a, 0);
-  Dom_size = vector<int>(a, 0);
-  Dom_size_1 = vector<size_t>(1 + d, 0);
-  Barr_type = vector<int>(a, 0);
-  init_rates = vector<double>(d, 0);
-  prob_init_rates = vector<double>(d, 0);
-  Barr_sigma = vector<double>(a, _params->SIGMA_0);
-  RNAPs_hooked = vector<RNAP>();
-  rm_RNAPs_idx = vector<uint>();
-  tss_and_unhooked_RNAPs = vector<int>();
-  picked_tr = vector<int>();
-  prob_unhooked_rates = vector<double>();
-  all_prob = vector<double>();
-  genes_pos = vector<DNApos_n>();
+  Barr_pos = std::vector<uint>(a, 0);
+  Dom_size = std::vector<int>(a, 0);
+  Dom_size_1 = std::vector<size_t>(1 + d, 0);
+  Barr_type = std::vector<int>(a, 0);
+  init_rates = std::vector<double>(d, 0);
+  prob_init_rates = std::vector<double>(d, 0);
+  Barr_sigma = std::vector<double>(a, _params->SIGMA_0);
+  RNAPs_hooked = std::vector<RNAP>();
+  rm_RNAPs_idx = std::vector<uint>();
+  tss_and_unhooked_RNAPs = std::vector<int>();
+  picked_tr = std::vector<int>();
+  prob_unhooked_rates = std::vector<double>();
+  all_prob = std::vector<double>();
+  genes_pos = std::vector<DNApos_n>();
   Barr_pos.reserve(c);
   Barr_type.reserve(c);
   Barr_sigma.reserve(c);
@@ -48,26 +48,26 @@ Individual::Individual(const Individual &indiv) {
   // Copy constructor used to duplicate an Indiv before mutation
   _genome_size = indiv._genome_size;
   _fitness = 1.0;
-  _genes = vector<Transcript>(indiv._genes);
-  _barr_fix = vector<DNApos_n>(indiv._barr_fix);
+  _genes = std::vector<Transcript>(indiv._genes);
+  _barr_fix = std::vector<DNApos_n>(indiv._barr_fix);
   size_t a = _barr_fix.size();
   size_t b = _params->RNAPS_NB;
   size_t c = a + b;
   size_t d = _genes.size();
-  Barr_pos = vector<uint>(a, 0);
-  Dom_size = vector<int>(a, 0);
-  Dom_size_1 = vector<size_t>(1 + d, 0);
-  Barr_type = vector<int>(a, 0);
-  init_rates = vector<double>(d, 0);
-  prob_init_rates = vector<double>(d, 0);
-  Barr_sigma = vector<double>(a, _params->SIGMA_0);
-  RNAPs_hooked = vector<RNAP>();
-  rm_RNAPs_idx = vector<uint>();
-  tss_and_unhooked_RNAPs = vector<int>();
-  picked_tr = vector<int>();
-  prob_unhooked_rates = vector<double>();
-  all_prob = vector<double>();
-  genes_pos = vector<DNApos_n>(2 * d, 0);
+  Barr_pos = std::vector<uint>(a, 0);
+  Dom_size = std::vector<int>(a, 0);
+  Dom_size_1 = std::vector<size_t>(1 + d, 0);
+  Barr_type = std::vector<int>(a, 0);
+  init_rates = std::vector<double>(d, 0);
+  prob_init_rates = std::vector<double>(d, 0);
+  Barr_sigma = std::vector<double>(a, _params->SIGMA_0);
+  RNAPs_hooked = std::vector<RNAP>();
+  rm_RNAPs_idx = std::vector<uint>();
+  tss_and_unhooked_RNAPs = std::vector<int>();
+  picked_tr = std::vector<int>();
+  prob_unhooked_rates = std::vector<double>();
+  all_prob = std::vector<double>();
+  genes_pos = std::vector<DNApos_n>(2 * d, 0);
   Barr_pos.reserve(c);
   Barr_type.reserve(c);
   Barr_sigma.reserve(c);
@@ -86,7 +86,7 @@ void Individual::set_mutation(double indel_nb, double inv_p) {
 
 void Individual::set_simulation_params(Params *params) { _params = params; }
 
-void Individual::set_target_envir(vector<double> &env) { _target_envir = env; }
+void Individual::set_target_envir(std::vector<double> &env) { _target_envir = env; }
 
 void Individual::mutate(void) {
 
@@ -230,7 +230,7 @@ void Individual::update_fitness(void) {
 }
 
 int Individual::get_rnd_dom_btwn_genes(void) {
-  vector<double> domain_probs, cum_probs;
+  std::vector<double> domain_probs, cum_probs;
   double non_gene_cum_size = 0;
 
   domain_probs.reserve(Dom_size_1.size());
@@ -279,7 +279,7 @@ void Individual::estimate_exression() {
 
   // ===================== Simulation ======================================
 
-  valarray<bool> isfinished;
+  std::valarray<bool> isfinished;
   double sum_init_rates;
   size_t index, j;
   DNApos pos;
@@ -455,7 +455,7 @@ void Individual::estimate_exression() {
 }
 
 void Individual::display_state(void) {
-  vector<char> sprite(_genome_size / _params->DELTA_X + 2, '.');
+  std::vector<char> sprite(_genome_size / _params->DELTA_X + 2, '.');
   // vector<char> scale(_genome_size / _params->DELTA_X + 2, ' ');
   sprite[_genome_size / _params->DELTA_X + 1] = 0;
   sprite[0] = ' ';
@@ -490,7 +490,7 @@ void Individual::display_state(void) {
       sprite[Barr_pos[i]] = 'X';
     }
   }
-  cout << "\t" << reinterpret_cast<char *>(sprite.data()) << endl;
+  std::cout << "\t" << reinterpret_cast<char *>(sprite.data()) << std::endl;
   // cout << "\t" << reinterpret_cast<char *>(scale.data()) << endl
   // << endl;
 }

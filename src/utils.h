@@ -8,7 +8,6 @@
 #include <cassert>
 #include <valarray>
 #include <vector>
-using namespace std;
 
 /* Vocabulary:
     TU = Transcription Unit
@@ -40,7 +39,7 @@ typedef array3::index arr_index;
    We need to get the real values from the params.ini file. */
 typedef struct {
   // INPUTS
-  string GFF, TSS, TTS, BARR_FIX;
+  std::string GFF, TSS, TTS, BARR_FIX;
   // GLOBAL
   double J_0 = 0.1; // The basal local flux of supercoiling (in each delta_x)
   int D = 800; // The effective diffusivity of supercoiling along DNA (bp²/s)
@@ -67,7 +66,7 @@ typedef struct {
 } Params;
 
 typedef struct {
-  string prot_name;
+  std::string prot_name;
   uint prot_pos;
 } prot_t;
 
@@ -86,10 +85,10 @@ typedef struct {
 } TSS_t;
 
 typedef struct {
-  string seqname; // name of the chromosome or scaffold
-  string source; // name of the program that generated this feature, or the data
+  std::string seqname; // name of the chromosome or scaffold
+  std::string source; // name of the program that generated this feature, or the data
                  // source (database or project name)
-  string feature; // feature type name, e.g. Gene, Variation, Similarity
+  std::string feature; // feature type name, e.g. Gene, Variation, Similarity
   uint start; // Start position of the feature, with sequence numbering starting
               // at 1
   uint
@@ -99,7 +98,7 @@ typedef struct {
   int frame; // One of '0', '1' or '2'. '0' indicates that the first base of the
              // feature is the first base of a codon, '1' that the second base
              // is the first base of a codon, and so on
-  string attribute; // A semicolon-separated list of tag-value pairs, providing
+  std::string attribute; // A semicolon-separated list of tag-value pairs, providing
                     // additional information about each feature
 } GFF_t;            // (Format like GFF file format in "Ensembl" databases)
 
@@ -113,24 +112,24 @@ typedef std::vector<GFF_t> GFF_file;
    =========================================================== */
 
 Params *readIni(const char *cfgFile);
-void readProt(prot_file &data, string protFile);
-void readTSS(TSS_file &data, string TSSFile);
-void readTTS(TTS_file &data, string TTSFile);
-void readGFF(GFF_file &data, string GFFFile);
-void readEnv(vector<double> &env, const char *Envfile);
+void readProt(prot_file &data, std::string protFile);
+void readTSS(TSS_file &data, std::string TSSFile);
+void readTTS(TTS_file &data, std::string TTSFile);
+void readGFF(GFF_file &data, std::string GFFFile);
+void readEnv(std::vector<double> &env, const char *Envfile);
 
-ostream &operator<<(ostream &stream, TSS_t const &s);
-ostream &operator<<(ostream &stream, TTS_t const &s);
-ostream &operator<<(ostream &stream, GFF_t const &s);
-ostream &operator<<(ostream &stream, prot_t const &s);
+std::ostream &operator<<(std::ostream &stream, TSS_t const &s);
+std::ostream &operator<<(std::ostream &stream, TTS_t const &s);
+std::ostream &operator<<(std::ostream &stream, GFF_t const &s);
+std::ostream &operator<<(std::ostream &stream, prot_t const &s);
 
 uint get_genome_size(GFF_file &gff_df);
-std::map<uint, vector<uint>> get_TU_tts(TSS_file &tss);
+std::map<uint, std::vector<uint>> get_TU_tts(TSS_file &tss);
 double f_prob_unhooked_rate(double sum_Kon, int DELTA_T,
                             size_t RNAPs_unhooked_nbr);
-void random_choice(vector<int> &result, const vector<int> &array, uint n,
-                   const vector<double> &probs);
-void calc_sigma(vector<double> &Barr_sigma, Params *params);
+void random_choice(std::vector<int> &result, const std::vector<int> &array,
+                   uint n, const std::vector<double> &probs);
+void calc_sigma(std::vector<double> &Barr_sigma, Params *params);
 
 /* ===========================================================
                      Definition of templates
@@ -139,20 +138,20 @@ void calc_sigma(vector<double> &Barr_sigma, Params *params);
 /* Prints a vector's content, elements separated by spaces */
 template <typename file_type> void display_vector(file_type &v) {
   for (size_t n = 0; n < v.size(); n++)
-    cout << v[n] << " ";
-  cout << endl;
+    std::cout << v[n] << " ";
+  std::cout << std::endl;
 }
 
 /* prints a valarray content */
 template <typename T> void display_array(T &v) {
-  cout << "{ ";
+  std::cout << "{ ";
   for (size_t i = 0; i < v.size(); i++)
-    cout << v[i] << " ";
-  cout << "}" << endl;
+    std::cout << v[i] << " ";
+  std::cout << "}" << std::endl;
 }
 
 /* sums the elements of a vector. */
-template <typename T> T vector_sum(const vector<T> &V) {
+template <typename T> T vector_sum(const std::vector<T> &V) {
   T sum = 0;
   for (size_t i = 0; i < V.size(); i++)
     sum += V[i];
@@ -161,8 +160,8 @@ template <typename T> T vector_sum(const vector<T> &V) {
 
 /* returns the index in Barr_pos where to place a TSS or a new barrier */
 template <typename T>
-void searchsorted(vector<uint> &result, vector<uint> &Barr_pos,
-                  vector<T> &TSS_pos) {
+void searchsorted(std::vector<uint> &result, std::vector<uint> &Barr_pos,
+                  std::vector<T> &TSS_pos) {
   uint index;
   for (auto tss : TSS_pos) {
     index = find_if(Barr_pos.begin(), Barr_pos.end(),

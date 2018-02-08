@@ -31,33 +31,33 @@ Params *readIni(const char *cfgFile) {
   conf->k_TOPO = getOptionToInt("k_TOPO");
   conf->x0_TOPO = getOptionToDouble("x0_TOPO");
   cleanupIniReader();
-  cout << cfgFile << " parsed successfully."
-       << endl; // Should return nothing as the config items have been cleaned
+  std::cout << cfgFile << " parsed successfully."
+       << std::endl; // Should return nothing as the config items have been cleaned
 
   return conf;
 }
 
-void readProt(prot_file &data, string protFile) {
-  ifstream file(protFile.c_str());
-  string str;
+void readProt(prot_file &data, std::string protFile) {
+  std::ifstream file(protFile.c_str());
+  std::string str;
   getline(file, str); // headers
   while (getline(file, str)) {
-    vector<string> v;
+    std::vector<std::string> v;
     boost::split(v, str, boost::is_any_of("\t"));
     if (v.size() == 2) {
       prot_t line = {v[0], static_cast<uint>(atoi(v[1].c_str()))};
       data.push_back(line);
     }
   }
-  cout << protFile << " parsed successfully." << endl;
+  std::cout << protFile << " parsed successfully." << std::endl;
 }
 
-void readTSS(TSS_file &data, string TSSFile) {
-  ifstream file(TSSFile.c_str());
-  string str;
+void readTSS(TSS_file &data, std::string TSSFile) {
+  std::ifstream file(TSSFile.c_str());
+  std::string str;
   getline(file, str); // headers
   while (getline(file, str)) {
-    vector<string> v;
+    std::vector<std::string> v;
     boost::split(v, str, ::isspace);
     if (v.size() == 4) {
       TSS_t line = {static_cast<uint>(atoi(v[0].c_str())), *(v[1].c_str()),
@@ -66,15 +66,15 @@ void readTSS(TSS_file &data, string TSSFile) {
     }
   }
   // display_vector_star(data);
-  cout << TSSFile << " parsed successfully." << endl;
+  std::cout << TSSFile << " parsed successfully." << std::endl;
 }
 
-void readTTS(TTS_file &data, string TTSFile) {
-  ifstream file(TTSFile.c_str());
-  string str;
+void readTTS(TTS_file &data, std::string TTSFile) {
+  std::ifstream file(TTSFile.c_str());
+  std::string str;
   getline(file, str); // headers
   while (getline(file, str)) {
-    vector<string> v;
+    std::vector<std::string> v;
     boost::split(v, str, ::isspace);
     if (v.size() == 4) {
       TTS_t line = {static_cast<uint>(atoi(v[0].c_str())), *(v[1].c_str()),
@@ -82,17 +82,17 @@ void readTTS(TTS_file &data, string TTSFile) {
       data.push_back(line);
     }
   }
-  cout << TTSFile << " parsed successfully." << endl;
+  std::cout << TTSFile << " parsed successfully." << std::endl;
 }
 
-void readGFF(GFF_file &data, string GFFFile) {
-  ifstream file(GFFFile.c_str());
-  string str;
+void readGFF(GFF_file &data, std::string GFFFile) {
+  std::ifstream file(GFFFile.c_str());
+  std::string str;
   do {
     getline(file, str);
   } while (str[0] == '#');
   do {
-    vector<string> v;
+    std::vector<std::string> v;
     boost::split(v, str, ::isspace);
     if (v.size() == 9) {
       GFF_t line = {v[0],
@@ -107,37 +107,37 @@ void readGFF(GFF_file &data, string GFFFile) {
       data.push_back(line);
     }
   } while (getline(file, str));
-  cout << GFFFile << " parsed successfully." << endl;
+  std::cout << GFFFile << " parsed successfully." << std::endl;
 }
 
-void readEnv(vector<double> &env, const char *Envfile) {
-  ifstream file(Envfile);
-  string str;
+void readEnv(std::vector<double> &env, const char *Envfile) {
+  std::ifstream file(Envfile);
+  std::string str;
   env.clear();
   do {
-    vector<string> v;
+    std::vector<std::string> v;
     boost::split(v, str, ::isspace);
     if (v.size() == 2)
       env.push_back(atof(v[1].c_str()));
   } while (getline(file, str));
-  cout << Envfile << " parsed successfully." << endl;
+  std::cout << Envfile << " parsed successfully." << std::endl;
 }
 
-ostream &operator<<(ostream &stream, TSS_t const &s) {
+std::ostream &operator<<(std::ostream &stream, TSS_t const &s) {
   return stream << "{ " << s.TUindex << " " << s.TUorient << " " << s.TSS_pos
                 << " " << s.TSS_strength << " }";
 }
 
-ostream &operator<<(ostream &stream, prot_t const &s) {
+std::ostream &operator<<(std::ostream &stream, prot_t const &s) {
   return stream << "{ " << s.prot_name << " " << s.prot_pos << " }";
 }
 
-ostream &operator<<(ostream &stream, TTS_t const &s) {
+std::ostream &operator<<(std::ostream &stream, TTS_t const &s) {
   return stream << "{ " << s.TUindex << " " << s.TUorient << " " << s.TTS_pos
                 << " " << s.TTS_proba_off << " }";
 }
 
-ostream &operator<<(ostream &stream, GFF_t const &s) {
+std::ostream &operator<<(std::ostream &stream, GFF_t const &s) {
   return stream << "{ " << s.seqname << " " << s.source << " " << s.feature
                 << " " << s.start << " " << s.end << " " << s.score << " "
                 << s.strand << " " << s.frame << " " << s.attribute << " }";
@@ -150,11 +150,11 @@ uint get_genome_size(GFF_file &gff_df) {
 }
 
 /* Get the transciption unit with the list of tts indexes belonging to TU. */
-map<uint, vector<uint>> get_TU_tts(TSS_file &tss) {
-  vector<uint> TU_values;
+std::map<uint, std::vector<uint>> get_TU_tts(TSS_file &tss) {
+  std::vector<uint> TU_values;
   std::transform(tss.begin(), tss.end(), std::back_inserter(TU_values),
                  [](TSS_t const &x) { return x.TUindex; });
-  map<uint, vector<uint>> TU_tts;
+  std::map<uint, std::vector<uint>> TU_tts;
   for (size_t i = 0, TU_index_val = TU_values[0]; i < TU_values.size();
        i++, TU_index_val = TU_values[i])
     TU_tts[TU_index_val].push_back(i);
@@ -167,11 +167,11 @@ double f_prob_unhooked_rate(double sum_Kon, int DELTA_T,
   return (exp(-sum_Kon * double(DELTA_T)) / RNAPs_unhooked_nbr);
 }
 
-void random_choice(vector<int> &result, const vector<int> &array, uint n,
-                   const vector<double> &proba) {
-  vector<double> cum_probs(proba.size(), 0);
-  vector<double> probs(proba);
-  vector<int> available(array);
+void random_choice(std::vector<int> &result, const std::vector<int> &array,
+                   uint n, const std::vector<double> &proba) {
+  std::vector<double> cum_probs(proba.size(), 0);
+  std::vector<double> probs(proba);
+  std::vector<int> available(array);
   result.clear();
   for (uint i = 0; i < n; ++i) {
     // Compute cumulated probs
@@ -184,9 +184,9 @@ void random_choice(vector<int> &result, const vector<int> &array, uint n,
                          [k](double p) -> bool { return p > k; }) -
                  cum_probs.begin();
     if (index >= available.size()) {
-      cout << "probs: ";
+      std::cout << "probs: ";
       display_vector(proba);
-      cout << "k = " << k << endl;
+      std::cout << "k = " << k << std::endl;
     }
     result.push_back(available[index]);
     double removed_p = probs[index];
@@ -200,7 +200,7 @@ void random_choice(vector<int> &result, const vector<int> &array, uint n,
   }
 }
 
-void calc_sigma(vector<double> &Barr_sigma, Params *params) {
+void calc_sigma(std::vector<double> &Barr_sigma, Params *params) {
   for (auto sig = Barr_sigma.begin(); sig != Barr_sigma.end(); sig++) {
     *sig += params->DELTA_T *
             (params->TOPO_CONC * params->TOPO_CTE /

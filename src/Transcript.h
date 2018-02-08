@@ -19,8 +19,8 @@ public:
   double r_;
   uint expr_count_;
   double f_init_rate(double sigma_t, double epsilon, double m,
-                     const vector<DNApos> &Barr_pos,
-                     const vector<double> &Barr_sigma);
+                     const std::vector<DNApos> &Barr_pos,
+                     const std::vector<double> &Barr_sigma);
   double f_prob_init_rate(double sum_init_rates, int DELTA_T);
   void shift(int d_n);
   void revert(DNApos posA, DNApos posB);
